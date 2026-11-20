@@ -1269,7 +1269,7 @@
     var guestReportService = null;
     var lockedYearsList = [];
 
-    var DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbycXZnNRLKjlWHw-AqIfJgyfwB0TVXrjaa0T6UAPUVwVyQrdivBSy5kl2W55HG8tkbBw/exec";
+    var DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbycXZnNRLKjIWHw-AqIFjlgyfwB0TVXrjaa0T6UAPUVwVyQrdivBSy5kI2W55HG8tkbBw/exec";
     var CACHED_WEB_APP_URL = '';
     try { CACHED_WEB_APP_URL = localStorage.getItem('hana_survey_webapp_url') || ''; } catch(e) {}
     var REAL_WEB_APP_URL = (SERVER_WEB_APP_URL && SERVER_WEB_APP_URL.indexOf('script.google.com') !== -1) ? SERVER_WEB_APP_URL : ((CACHED_WEB_APP_URL && CACHED_WEB_APP_URL.indexOf('script.google.com') !== -1) ? CACHED_WEB_APP_URL : DEFAULT_WEB_APP_URL);
