@@ -1406,9 +1406,9 @@
     function parseServiceParam(param) {
       if (!param) return null;
       var p = param.toString().toLowerCase().trim();
-      if (p === 'health' || p === 'health_only' || p === 'checkup' || p === 'ตรวจสุขภาพ' || p === 'ตรวจสุขภาพประจำปี') return 'ตรวจสุขภาพประจำปี';
-      if (p === 'vaccine' || p === 'vaccine_only' || p === 'vac' || p === 'vax' || p === 'วัคซีน' || p === 'ฉีดวัคซีน' || p === 'ฉีดวัคซีนไข้หวัดใหญ่') return 'ฉีดวัคซีนไข้หวัดใหญ่';
-      if (p === 'blood' || p === 'blood_only' || p === 'donate' || p === 'บริจาคโลหิต') return 'บริจาคโลหิต';
+      if (p === 'health' || p === 'health_only' || p === 'checkup' || p === 'ตรวจสุขภาพ' || p === 'ตรวจสุขภาพประจำปี' || p.indexOf('ตรวจสุขภาพ') !== -1 || p.indexOf('สุขภาพ') !== -1) return 'ตรวจสุขภาพประจำปี';
+      if (p === 'vaccine' || p === 'vaccine_only' || p === 'vac' || p === 'vax' || p === 'วัคซีน' || p === 'ฉีดวัคซีน' || p === 'ฉีดวัคซีนไข้หวัดใหญ่' || p.indexOf('วัคซีน') !== -1) return 'ฉีดวัคซีนไข้หวัดใหญ่';
+      if (p === 'blood' || p === 'blood_only' || p === 'donate' || p === 'บริจาคโลหิต' || p === 'บริจาคเลือด' || p.indexOf('บริจาค') !== -1 || p.indexOf('โลหิต') !== -1 || p.indexOf('เลือด') !== -1) return 'บริจาคโลหิต';
       if (p === 'all') return 'ALL';
       return null;
     }
@@ -1625,7 +1625,8 @@
       var res = data;
       if (guestReportService && guestReportService !== 'ALL') {
         res = res.filter(function(s) {
-          return s.serviceType === guestReportService;
+          var norm = parseServiceParam(s.serviceType) || s.serviceType;
+          return norm === guestReportService;
         });
       }
       if (lockedYearsList && lockedYearsList.length > 0) {
@@ -2396,7 +2397,8 @@
       });
 
       var filtered = allFiltered.filter(function(s) {
-        return s.serviceType === currentDashboardService;
+        var norm = parseServiceParam(s.serviceType) || s.serviceType;
+        return norm === currentDashboardService;
       });
 
       var attended = filtered.filter(function(s) { return s.attended; });
