@@ -1,0 +1,3091 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบประเมินความพึงพอใจ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; transition: background-color 0.3s ease; }
+    
+    /* ปุ่มคะแนน 1 - 5 */
+    .btn-num {
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      border: 1.5px solid #cbd5e1;
+      background-color: #ffffff;
+      font-size: 15px;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-num:hover {
+      border-color: #94a3b8;
+      background-color: #f8fafc;
+      transform: translateY(-1px);
+    }
+    
+    /* ธีมสีน้ำเงิน: ตรวจสุขภาพ */
+    .theme-health .btn-num.active {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+      border-color: #2563eb !important;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.45);
+      transform: scale(1.08);
+    }
+    
+    /* ธีมสีเขียวมรกต: ฉีดวัคซีน */
+    .theme-vaccine .btn-num.active {
+      background-color: #059669 !important;
+      color: #ffffff !important;
+      border-color: #059669 !important;
+      box-shadow: 0 4px 10px rgba(5, 150, 105, 0.45);
+      transform: scale(1.08);
+    }
+    
+    /* ธีมสีแดงกุหลาบ: บริจาคโลหิต (3 ระดับ) */
+    .btn-rate-3 {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 14px;
+      border-radius: 10px;
+      border: 1.5px solid #cbd5e1;
+      background-color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-rate-3:hover {
+      background-color: #f8fafc;
+      border-color: #94a3b8;
+    }
+    .btn-rate-3.active-1 {
+      background-color: #f59e0b !important;
+      color: #ffffff !important;
+      border-color: #f59e0b !important;
+      box-shadow: 0 4px 8px rgba(245, 158, 11, 0.35);
+      transform: scale(1.04);
+    }
+    .btn-rate-3.active-2 {
+      background-color: #3b82f6 !important;
+      color: #ffffff !important;
+      border-color: #3b82f6 !important;
+      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.35);
+      transform: scale(1.04);
+    }
+    .btn-rate-3.active-3 {
+      background-color: #e11d48 !important;
+      color: #ffffff !important;
+      border-color: #e11d48 !important;
+      box-shadow: 0 4px 8px rgba(225, 29, 72, 0.35);
+      transform: scale(1.04);
+    }
+
+    /* สไตล์สำหรับการพิมพ์ป้ายตั้งโต๊ะ QR Code */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 8mm 6mm;
+      }
+      body {
+        background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      header, #serviceBanner, #surveySection, #dashboardSection, #qrPrintControls, #qrModal, #passwordModal, #serviceModal, #successModal {
+        display: none !important;
+      }
+      #qrPrintArea {
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+      }
+
+      /* โหมด 1: รวม 3 จุดใน 1 แผ่น A4 (บังคับ 3 คอลัมน์ ไม่ล้นไปหน้า 2) */
+      .print-mode-combined .print-grid-container {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 10px !important;
+      }
+      .print-mode-combined .print-card {
+        padding: 12px 8px !important;
+        border-width: 3px !important;
+        border-radius: 16px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+      }
+      .print-mode-combined .print-card-icon {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 22px !important;
+        margin: 0 auto 6px auto !important;
+      }
+      .print-mode-combined .print-card-title {
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        margin-bottom: 2px !important;
+      }
+      .print-mode-combined .print-card-sub {
+        font-size: 10.5px !important;
+        margin-bottom: 8px !important;
+      }
+      .print-mode-combined .print-qr-box {
+        padding: 6px !important;
+      }
+      .print-mode-combined .print-qr-img {
+        width: 140px !important;
+        height: 140px !important;
+      }
+      .print-mode-combined .print-card-badge {
+        font-size: 10.5px !important;
+        margin-top: 8px !important;
+        padding: 4px 8px !important;
+      }
+
+      /* โหมด 2: พิมพ์แยก 3 แผ่น A4 (จุดละ 1 แผ่น ป้ายใหญ่เต็มหน้าสำหรับตั้งโต๊ะ) */
+      .print-mode-separate .print-header-intro {
+        display: none !important;
+      }
+      .print-mode-separate .print-grid-container {
+        display: block !important;
+      }
+      .print-mode-separate .print-card {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 255mm !important;
+        padding: 30px !important;
+        margin: 0 0 0 0 !important;
+        border-width: 5px !important;
+        border-radius: 28px !important;
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .print-mode-separate .print-card:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .print-mode-separate .print-card-icon {
+        width: 76px !important;
+        height: 76px !important;
+        font-size: 38px !important;
+        margin: 0 auto 16px auto !important;
+      }
+      .print-mode-separate .print-card-title {
+        font-size: 26px !important;
+        font-weight: 900 !important;
+        margin-bottom: 6px !important;
+      }
+      .print-mode-separate .print-card-sub {
+        font-size: 15px !important;
+        margin-bottom: 24px !important;
+      }
+      .print-mode-separate .print-qr-box {
+        padding: 14px !important;
+      }
+      .print-mode-separate .print-qr-img {
+        width: 270px !important;
+        height: 270px !important;
+      }
+      .print-mode-separate .print-card-badge {
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        margin-top: 24px !important;
+        padding: 8px 24px !important;
+      }
+    }
+  </style>
+</head>
+<body id="mainBody" class="bg-slate-50 text-slate-800 min-h-screen theme-health">
+
+  <!-- Header Bar -->
+  <header id="topHeader" class="bg-white border-b-2 border-blue-600 sticky top-0 z-40 shadow-xs transition-all duration-300">
+    <div class="max-w-6xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap justify-between items-center gap-2">
+      <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+        <div id="serviceLogo" class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-md transition-all shrink-0">🩺</div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5 sm:gap-2">
+            <h1 id="headerTitle" class="font-bold text-slate-900 text-xs sm:text-sm md:text-base leading-tight truncate">แบบประเมินความพึงพอใจการตรวจสุขภาพ</h1>
+            <span id="headerModeTag" class="hidden md:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200 shrink-0">ตรวจสุขภาพ</span>
+          </div>
+          <p id="headerSubtitle" class="text-[10px] sm:text-xs text-slate-500 truncate">ระบบบันทึกความพึงพอใจรายบุคคล • แยกชีตอัตโนมัติ</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-1 sm:space-x-2 shrink-0">
+        <!-- Badge สำหรับโหมดรายงาน รพ. / คู่ค้า -->
+        <div id="guestReportBadge" class="hidden px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-xs">
+          <span>🏥</span> <span id="guestReportBadgeText" class="hidden sm:inline">รายงานสำหรับ รพ. (Read-Only)</span><span class="sm:hidden">รพ. Read-Only</span>
+        </div>
+        <button type="button" id="navQrModalBtn" onclick="openQrModal()" class="px-2 sm:px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 shadow-xs transition flex items-center gap-1">
+          <span>🔗</span> <span class="hidden sm:inline">ลิงก์ & QR Code</span><span class="sm:hidden">QR</span>
+        </button>
+        <button id="navSurveyBtn" onclick="switchTab('survey')" class="px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-xs transition">แบบประเมิน</button>
+        <button id="navDashboardBtn" onclick="tryOpenAdmin('dashboard')" class="px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">แดชบอร์ด 🔒</button>
+        <button id="adminAuthBtn" onclick="toggleAdminAuth()" class="p-1.5 px-2 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium transition">
+          <span id="adminStatusText">Admin</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner แจ้งเตือนสถานะโครงการ & ปุ่มเปลี่ยนเมื่อสแกนผิดฟอร์ม -->
+  <div class="max-w-6xl mx-auto px-2.5 sm:px-4 mt-2 sm:mt-3">
+    <div id="serviceBanner" class="bg-blue-50/90 border border-blue-200 rounded-2xl p-2.5 sm:p-3 flex flex-wrap justify-between items-center gap-2 text-xs shadow-xs transition-all duration-300">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span id="activeServiceDot" class="inline-block w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse shrink-0"></span>
+        <span class="text-slate-600 font-medium text-[11px] sm:text-xs">แบบประเมินขณะนี้:</span>
+        <span id="activeServiceBadge" class="font-bold text-blue-800 bg-white px-2.5 py-0.5 sm:py-1 rounded-xl border border-blue-300 shadow-xs text-xs sm:text-sm flex items-center gap-1.5">
+          <span>🩺</span> การตรวจสุขภาพประจำปี
+        </span>
+        <span id="dedicatedNoticeBadge" class="hidden px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+          🎯 สแกนตรงจาก QR Code ประจำจุด
+        </span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="px-2 py-0.5 rounded-xl text-[10px] sm:text-[11px] font-bold bg-white/90 text-slate-700 border border-slate-200 shadow-2xs flex items-center gap-1">
+          <span>🔒</span> แบบประเมินถูกล็อกตามจุดบริการ
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-6xl mx-auto px-2.5 sm:px-4 py-3 sm:py-5">
+
+    <!-- 1. ส่วนหน้าแบบประเมิน -->
+    <div id="surveySection">
+
+      <!-- Hero Card ระบุกิจกรรมอย่างเด่นชัดมาก (แก้ปัญหาพนักงานสับสนว่าทำอันไหนไปแล้ว) -->
+      <div id="activityHeroCard" class="mb-5 rounded-3xl p-5 md:p-6 text-white shadow-lg bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 transition-all duration-500 relative overflow-hidden">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1.5">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold border border-white/30">
+              <span id="heroActivityIcon">🩺</span>
+              <span id="heroActivityTag">โครงการตรวจสุขภาพประจำปี</span>
+            </div>
+            <h2 id="heroHeadline" class="text-xl md:text-2xl font-extrabold tracking-tight">แบบประเมิน: การตรวจสุขภาพประจำปี</h2>
+            <p id="heroNoticeMessage" class="text-xs md:text-sm text-blue-100 leading-relaxed max-w-2xl">
+              💡 หมายเหตุ: หากท่านเข้ารับบริการ<strong>ฉีดวัคซีนไข้หวัดใหญ่</strong>ด้วย กรุณาสแกน QR Code สำหรับฉีดวัคซีนเพื่อประเมินแยกอีกชุดนะคะ
+            </p>
+          </div>
+          <div class="shrink-0 flex md:flex-col gap-2">
+            <div class="px-3.5 py-1.5 rounded-2xl bg-white/20 backdrop-blur-md text-white font-bold text-xs border border-white/30 flex items-center gap-1.5 shadow-sm">
+              <span>🔒</span> <span>ล็อกแบบประเมินเฉพาะโครงการนี้</span>
+            </div>
+          </div>
+        </div>
+        <!-- ตกแต่งพื้นหลัง Hero Card -->
+        <div class="absolute -right-8 -bottom-10 w-44 h-44 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
+      </div>
+
+      <!-- กล่องฟอร์มแบบประเมิน -->
+      <div id="formCardContainer" class="bg-white rounded-3xl shadow-sm border-2 border-blue-200 p-5 md:p-8 space-y-6 transition-all duration-300">
+
+        <!-- ข้อมูลทั่วไป: สถานที่, ประเภทพนักงาน, เพศ -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+          <!-- 1. สถานที่ -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">สถานที่เข้ารับบริการ <span class="text-red-500">*</span></label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="radio-label flex items-center justify-center p-2.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer hover:border-blue-400 transition text-sm font-semibold text-slate-700">
+                <input type="radio" name="location" value="LPN1" checked class="h-4 w-4 text-blue-600">
+                <span class="ml-2">LPN 1</span>
+              </label>
+              <label class="radio-label flex items-center justify-center p-2.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer hover:border-blue-400 transition text-sm font-semibold text-slate-700">
+                <input type="radio" name="location" value="LPN2" class="h-4 w-4 text-blue-600">
+                <span class="ml-2">LPN 2</span>
+              </label>
+            </div>
+          </div>
+          <!-- 2. ประเภทพนักงาน -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">ประเภทพนักงาน <span class="text-red-500">*</span></label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="radio-label flex items-center justify-center p-2.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer hover:border-blue-400 transition text-sm font-semibold text-slate-700">
+                <input type="radio" name="employeeType" value="รายวัน" checked class="h-4 w-4 text-blue-600">
+                <span class="ml-2">รายวัน</span>
+              </label>
+              <label class="radio-label flex items-center justify-center p-2.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer hover:border-blue-400 transition text-sm font-semibold text-slate-700">
+                <input type="radio" name="employeeType" value="รายเดือน" class="h-4 w-4 text-blue-600">
+                <span class="ml-2">รายเดือน</span>
+              </label>
+            </div>
+          </div>
+          <!-- 3. เพศ -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">เพศ <span class="text-red-500">*</span></label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="radio-label flex items-center justify-center p-2.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer hover:border-blue-400 transition text-sm font-semibold text-slate-700">
+                <input type="radio" name="gender" value="ชาย" checked class="h-4 w-4 text-blue-600">
+                <span class="ml-2">ชาย</span>
+              </label>
+              <label class="radio-label flex items-center justify-center p-2.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer hover:border-blue-400 transition text-sm font-semibold text-slate-700">
+                <input type="radio" name="gender" value="หญิง" class="h-4 w-4 text-blue-600">
+                <span class="ml-2">หญิง</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- แผนก และ ช่วงอายุ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">ฝ่าย / แผนกที่สังกัด <span class="text-red-500">*</span></label>
+            <select id="deptSelect" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500">
+              <option value="" disabled selected>-- เลือกแผนกของท่าน --</option>
+              <option value="BSD1">BSD1</option>
+              <option value="BSD2">BSD2</option>
+              <option value="CADT">CADT</option>
+              <option value="FAC">FAC</option>
+              <option value="FACS">FACS</option>
+              <option value="FIN">FIN</option>
+              <option value="GEN">GEN</option>
+              <option value="GENS">GENS</option>
+              <option value="HRD">HRD</option>
+              <option value="HRDS">HRDS</option>
+              <option value="IC">IC</option>
+              <option value="ICS">ICS</option>
+              <option value="IE">IE</option>
+              <option value="IT">IT</option>
+              <option value="ITS">ITS</option>
+              <option value="LOG">LOG</option>
+              <option value="LOGS">LOGS</option>
+              <option value="OP1">OP1</option>
+              <option value="OP1S">OP1S</option>
+              <option value="OP2S">OP2S</option>
+              <option value="OP3">OP3</option>
+              <option value="OP4">OP4</option>
+              <option value="OPT">OPT</option>
+              <option value="PLN1">PLN1</option>
+              <option value="PLN2">PLN2</option>
+              <option value="PM">PM</option>
+              <option value="PMS">PMS</option>
+              <option value="PUR">PUR</option>
+              <option value="PURS">PURS</option>
+              <option value="QM">QM</option>
+              <option value="QMSS">QMSS</option>
+              <option value="TECH">TECH</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">ช่วงอายุ</label>
+            <select id="ageGroup" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500">
+              <option value="ต่ำกว่า 30 ปี">ต่ำกว่า 30 ปี</option>
+              <option value="30 - 39 ปี" selected>30 - 39 ปี</option>
+              <option value="40 - 49 ปี">40 - 49 ปี</option>
+              <option value="50 ปีขึ้นไป">50 ปีขึ้นไป</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- สถานะการเข้ารับบริการ -->
+        <div class="pt-2 border-t border-slate-100">
+          <label class="block text-xs font-bold text-slate-700 mb-2">สถานะการเข้ารับบริการ <span class="text-red-500">*</span></label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div id="cardAttended" onclick="toggleAttendance('attended')" class="flex items-center p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/70 shadow-sm cursor-pointer transition-all">
+              <input type="radio" id="att_attended" name="attendanceStatus" value="attended" checked class="h-4 w-4 text-emerald-600 pointer-events-none">
+              <span id="attAttendedText" class="ml-2.5 text-sm font-bold text-emerald-900">✅ เข้ารับการตรวจสุขภาพเรียบร้อยแล้ว</span>
+            </div>
+            <div id="cardNotAttended" onclick="toggleAttendance('not_attended')" class="flex items-center p-3.5 rounded-2xl border-2 border-slate-200 bg-white cursor-pointer hover:border-rose-300 transition-all opacity-80 hover:opacity-100">
+              <input type="radio" id="att_not_attended" name="attendanceStatus" value="not_attended" class="h-4 w-4 text-rose-600 pointer-events-none">
+              <span id="attNotAttendedText" class="ml-2.5 text-sm font-bold text-slate-700">❌ ไม่ได้เข้ารับการตรวจสุขภาพ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ส่วนคำถามประเมินคะแนน -->
+        <div id="evaluationSection" class="space-y-4 pt-2">
+          <div class="flex flex-wrap justify-between items-center gap-2">
+            <h3 id="evalSectionTitle" class="text-sm md:text-base font-bold text-slate-900">ระดับความพึงพอใจต่อการตรวจสุขภาพประจำปี</h3>
+            <span id="evalScaleLegend" class="text-xs text-slate-500 font-semibold bg-slate-100 px-2.5 py-1 rounded-lg">1 = น้อยที่สุด • 5 = มากที่สุด</span>
+          </div>
+
+          <!-- กล่องคำถามแบบ Dynamic -->
+          <div id="questionsContainer" class="space-y-3">
+            <!-- สร้างผ่าน JavaScript ตามกิจกรรมที่เลือก -->
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">ข้อเสนอแนะเพิ่มเติม / ความคิดเห็นอื่นๆ</label>
+            <textarea id="feedback" rows="3" placeholder="ระบุสิ่งที่ประทับใจ หรือสิ่งที่ต้องการให้ปรับปรุงเพิ่มเติมในโครงการนี้..." class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+        </div>
+
+        <!-- กล่องกรณีไม่ได้เข้ารับบริการ -->
+        <div id="notAttendedSection" class="hidden p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
+          <p id="notAttendedHeader" class="text-xs md:text-sm font-bold text-amber-900">⚠️ ระบุเหตุผลที่ไม่ได้เข้ารับการตรวจสุขภาพ (ระบบจะตัดการประเมินคะแนนออกให้อัตโนมัติ)</p>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">เหตุผลหลัก <span class="text-red-500">*</span></label>
+            <select id="absenceReason" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-amber-500">
+              <!-- ตัวเลือกเหตุผลจะอัปเดตตามกิจกรรม -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">รายละเอียดเพิ่มเติม (ถ้ามี)</label>
+            <input type="text" id="absenceDetail" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)" class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs md:text-sm">
+          </div>
+        </div>
+
+        <button type="button" onclick="submitSurveyData()" id="submitBtn" class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-blue-200 transition-all transform active:scale-[0.99]">
+          บันทึกข้อมูลแบบประเมิน
+        </button>
+
+      </div>
+    </div>
+
+    <!-- 2. ส่วนหน้าแดชบอร์ดสรุปผล -->
+    <div id="dashboardSection" class="hidden space-y-5">
+      
+      <!-- แบนเนอร์แสดงสถานะโหมดรายงาน รพ. / คู่ค้า -->
+      <div id="guestReportBanner" class="hidden bg-emerald-50 border border-emerald-300 text-emerald-950 p-3 sm:p-4 rounded-2xl text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-base sm:text-lg">🏥</span>
+          <span class="font-bold text-emerald-900 text-xs sm:text-sm">รายงานสรุปผลการประเมินความพึงพอใจสำหรับโรงพยาบาลและคู่ค้า</span>
+          <span id="guestReportServiceBadge" class="bg-white px-2.5 py-0.5 rounded-lg border border-emerald-300 font-bold text-emerald-800 shadow-2xs"></span>
+          <span id="guestReportYearLockBadge" class="hidden bg-emerald-200 text-emerald-900 px-2.5 py-0.5 rounded-lg font-bold border border-emerald-400"></span>
+        </div>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-[11px] shadow-2xs">โหมดอ่านอย่างเดียว (Read-Only)</span>
+        </div>
+      </div>
+
+      <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <!-- แถบสลับแดชบอร์ด 3 กิจกรรม -->
+        <div class="grid grid-cols-3 sm:flex sm:flex-wrap p-1 bg-slate-100 rounded-xl gap-1">
+          <button id="dashTabHealth" onclick="switchDashboardTab('ตรวจสุขภาพประจำปี')" class="px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-center bg-white text-blue-600 shadow-sm transition truncate">🩺 ตรวจสุขภาพ</button>
+          <button id="dashTabVaccine" onclick="switchDashboardTab('ฉีดวัคซีนไข้หวัดใหญ่')" class="px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-center text-slate-600 transition truncate">💉 ฉีดวัคซีน</button>
+          <button id="dashTabBlood" onclick="switchDashboardTab('บริจาคโลหิต')" class="px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-center text-slate-600 transition truncate">🩸 บริจาคโลหิต</button>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <!-- ตัวกรองปี (สรุปรายปี) -->
+          <div class="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 shadow-xs">
+            <span class="text-[11px] font-bold text-slate-500">📅 ปี:</span>
+            <select id="filterYear" onchange="updateDashboard()" class="bg-transparent font-medium text-slate-700 text-xs focus:outline-none cursor-pointer">
+              <option value="ALL">ทุกปี</option>
+            </select>
+          </div>
+          <span id="yearlySummaryHintBadge" class="hidden text-[11px] bg-blue-50 text-blue-700 px-2.5 py-1.5 rounded-lg border border-blue-200 font-semibold shadow-2xs">📅 สรุปรวมรายปี (ควบ 2 เดือน)</span>
+
+          <!-- ตัวกรองเดือน (แสดงเฉพาะกิจกรรมบริจาคโลหิต, ซ่อนอัตโนมัติสำหรับตรวจสุขภาพและฉีดวัคซีนเพื่อดูรวมรายปี) -->
+          <div id="filterMonthContainer" class="hidden flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 shadow-xs">
+            <span class="text-[11px] font-bold text-slate-500">🗓️ เดือน:</span>
+            <select id="filterMonth" onchange="updateDashboard()" class="bg-transparent font-medium text-slate-700 text-xs focus:outline-none cursor-pointer">
+              <option value="ALL">ทุกเดือน</option>
+              <option value="01">ม.ค. (01)</option>
+              <option value="02">ก.พ. (02)</option>
+              <option value="03">มี.ค. (03)</option>
+              <option value="04">เม.ย. (04)</option>
+              <option value="05">พ.ค. (05)</option>
+              <option value="06">มิ.ย. (06)</option>
+              <option value="07">ก.ค. (07)</option>
+              <option value="08">ส.ค. (08)</option>
+              <option value="09">ก.ย. (09)</option>
+              <option value="10">ต.ค. (10)</option>
+              <option value="11">พ.ย. (11)</option>
+              <option value="12">ธ.ค. (12)</option>
+            </select>
+          </div>
+
+          <select id="filterLocation" onchange="updateDashboard()" class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-medium text-slate-700 shadow-xs">
+            <option value="ALL">ทุกสถานที่ (LPN1 & LPN2)</option>
+            <option value="LPN1">เฉพาะ LPN 1</option>
+            <option value="LPN2">เฉพาะ LPN 2</option>
+          </select>
+          <select id="filterEmpType" onchange="updateDashboard()" class="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-medium text-slate-700 shadow-xs">
+            <option value="ALL">ทุกประเภทพนักงาน</option>
+            <option value="รายวัน">เฉพาะ รายวัน</option>
+            <option value="รายเดือน">เฉพาะ รายเดือน</option>
+          </select>
+          <div class="flex items-center gap-1.5 flex-wrap ml-auto">
+            <button type="button" id="refreshDashBtn" onclick="fetchDashboardDataFromSheet(true)" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shrink-0 flex items-center gap-1.5 transition shadow-xs">
+              <span id="refreshIcon">🔄</span> <span id="refreshText">รีเฟรชข้อมูล</span>
+            </button>
+            <button type="button" id="copyCurrentReportLinkBtn" onclick="copyCurrentViewReportUrl()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shrink-0 flex items-center gap-1.5 transition shadow-xs" title="คัดลอกลิงก์แดชบอร์ดเฉพาะโครงการและปีที่กำลังดูอยู่ตอนนี้เพื่อส่งให้ รพ.">
+              <span>🔗</span> <span class="hidden sm:inline">คัดลอกลิงก์ส่ง รพ.</span><span class="sm:hidden">คัดลอกลิงก์</span>
+            </button>
+            <a href="https://docs.google.com/spreadsheets/d/1mWQlYUDdx9OxO9NrQPd1aNcM449f7_4GBWz_ZbcYFTQ/edit?gid=0#gid=0" id="openSheetLink" target="_blank" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shrink-0 flex items-center gap-1 shadow-xs">
+              <span>📑</span> <span class="hidden sm:inline">เปิดดู Google Sheet</span><span class="sm:hidden">Sheet</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- แถบแสดงสถานะข้อมูล -->
+      <div id="dataStatusBanner" class="bg-blue-50/70 border border-blue-200 text-slate-700 px-3 sm:px-4 py-2 rounded-xl text-xs flex flex-wrap justify-between items-center gap-2">
+        <div class="flex items-center gap-2">
+          <span id="statusDot" class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+          <span id="dataStatusText" class="font-medium text-slate-700 text-xs sm:text-sm">พร้อมใช้งาน</span>
+        </div>
+        <div class="text-[11px] text-slate-500">
+          <span id="lastUpdatedTime">อัปเดตล่าสุด: -</span>
+        </div>
+      </div>
+
+      <!-- KPI 4 ตัวเลข (สไตล์ตามรูปตัวอย่าง: การ์ดขาวมน เรียบหรู สะอาดตา ไอคอนมุมขวา) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+          <div>
+            <p class="text-xs text-slate-500 font-medium">บันทึกทั้งหมด</p>
+            <p id="kpiTotal" class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1">0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 text-lg">
+            👥
+          </div>
+        </div>
+        
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+          <div>
+            <p id="kpiAttendedLabel" class="text-xs text-emerald-700 font-medium">รับบริการจริง</p>
+            <p id="kpiAttended" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1">0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 text-lg">
+            ✅
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+          <div>
+            <p id="kpiNotAttendedLabel" class="text-xs text-rose-700 font-medium">ไม่ได้เข้ารับบริการ</p>
+            <p id="kpiNotAttended" class="text-2xl sm:text-3xl font-extrabold text-rose-500 mt-1">0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 text-lg">
+            ❌
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+          <div>
+            <p id="kpiAvgScoreLabel" class="text-xs text-blue-700 font-medium">คะแนนเฉลี่ยรวม</p>
+            <p id="kpiAvgScore" class="text-2xl sm:text-3xl font-extrabold text-blue-600 mt-1">0.00</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 text-lg">
+            ⭐
+          </div>
+        </div>
+      </div>
+
+      <!-- แถวกราฟหลัก 2 คอลัมน์ (สไตล์ Dashboard มินิมอล โมเดิร์น ตามภาพตัวอย่างเป๊ะๆ) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+        
+        <!-- กล่องซ้าย: สรุปภาพรวมการฉีดวัคซีน/ตรวจสุขภาพ (Donut Chart + ข้อมูลสรุปด้านขวา สไตล์ในภาพตัวอย่าง) -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-center pb-2.5 border-b border-slate-100 mb-3">
+              <h4 id="overviewPieTitle" class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <span id="overviewPieIcon">🩺</span> <span id="overviewPieText">สรุปภาพรวม: ตรวจสุขภาพประจำปี</span>
+              </h4>
+              <span id="overviewTotalBadge" class="text-[11px] text-slate-500 font-medium bg-slate-50 border border-slate-200 px-2.5 py-0.5 rounded-full">0 รายการ</span>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+              <!-- วงกลม Donut Chart -->
+              <div class="w-full sm:w-3/5 h-52 sm:h-60 relative flex items-center justify-center">
+                <canvas id="overviewPieChart"></canvas>
+              </div>
+              
+              <!-- สรุปรายการด้านขวา (กล่องสีมน + ข้อความ + จำนวน/เปอร์เซ็นต์ เหมือนในภาพตัวอย่าง) -->
+              <div class="w-full sm:w-2/5 space-y-2 text-xs text-slate-700" id="overviewLegendList">
+                <div class="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center justify-between">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span id="ovDotAttended" class="w-3.5 h-3.5 rounded-[4px] bg-emerald-600 shrink-0"></span>
+                    <span id="ovLabelAttended" class="font-bold text-emerald-950 truncate">รับบริการจริง</span>
+                  </div>
+                  <div class="text-right ml-2 shrink-0">
+                    <span id="ovCountAttended" class="font-extrabold text-emerald-700">0 คน</span>
+                    <span id="ovPctAttended" class="text-[10px] text-slate-400 block">(0%)</span>
+                  </div>
+                </div>
+
+                <div class="p-2.5 rounded-xl bg-rose-50/70 border border-rose-100 flex items-center justify-between">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span id="ovDotNotAttended" class="w-3.5 h-3.5 rounded-[4px] bg-rose-500 shrink-0"></span>
+                    <span id="ovLabelNotAttended" class="font-bold text-rose-950 truncate">ไม่ได้เข้ารับบริการ</span>
+                  </div>
+                  <div class="text-right ml-2 shrink-0">
+                    <span id="ovCountNotAttended" class="font-extrabold text-rose-600">0 คน</span>
+                    <span id="ovPctNotAttended" class="text-[10px] text-slate-400 block">(0%)</span>
+                  </div>
+                </div>
+
+                <div class="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-3.5 h-3.5 rounded-[4px] bg-blue-600 shrink-0"></span>
+                    <span class="font-bold text-blue-950 truncate">คะแนนเฉลี่ยรวม</span>
+                  </div>
+                  <div class="text-right ml-2 shrink-0">
+                    <span id="ovAvgScore" class="font-extrabold text-blue-700 text-sm">0.00</span>
+                    <span id="ovAvgScoreMax" class="text-[10px] text-slate-400 block">เต็ม 5.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>อัตราการเข้ารับบริการ</span>
+            <span id="ovAttendanceRate" class="font-extrabold text-emerald-600">0%</span>
+          </div>
+        </div>
+
+        <!-- กล่องขวา: สถิติคะแนนความพึงพอใจแยกตามเกณฑ์ (Bar Chart หลากสี + ตารางรายการ List ด้านล่าง สไตล์ในภาพตัวอย่าง) -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-center pb-2.5 border-b border-slate-100 mb-3">
+              <h4 id="chartTitle" class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <span>📊</span> <span>สถิติคะแนนความพึงพอใจแยกตามเกณฑ์</span>
+              </h4>
+              <span id="chartMaxScoreLabel" class="text-[11px] text-slate-500 font-medium bg-slate-50 border border-slate-200 px-2.5 py-0.5 rounded-full">เต็ม 5.00 คะแนน</span>
+            </div>
+
+            <!-- กราฟแท่งหลากสี มีตัวเลขบนยอดแท่ง เหมือนในรูปตัวอย่าง -->
+            <div class="h-44 sm:h-48 relative">
+              <canvas id="criteriaChart"></canvas>
+            </div>
+
+            <!-- ตารางรายการเกณฑ์การประเมินแบบ List Items ด้านล่างกราฟ เหมือนในรูปตัวอย่างเป๊ะ -->
+            <div class="mt-3.5 border-t border-slate-100 max-h-52 overflow-y-auto divide-y divide-slate-100 text-xs" id="criteriaLegendGrid">
+              <!-- เจนผ่าน JS: แต่ละแถวมีจุดสีมน + ชื่อเกณฑ์เต็ม + ตัวเลขคะแนนชิดขวา -->
+            </div>
+          </div>
+
+          <div class="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+            <span>คะแนนเฉลี่ยรายข้อ (1.00 - 5.00)</span>
+            <span class="text-blue-600 font-bold">รวมทุกลำดับข้อ</span>
+          </div>
+        </div>
+
+      </div>
+
+
+
+      <!-- รายการสรุปเหตุผล & ข้อเสนอแนะ -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- กล่องเหตุผลที่ไม่ได้เข้ารับบริการ -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
+          <div class="flex justify-between items-center">
+            <h4 class="text-xs font-bold text-slate-700">❌ สรุปเหตุผลที่ไม่ได้เข้ารับบริการ</h4>
+            <span id="notAttendedCountBadge" class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[11px] font-bold">0 รายการ</span>
+          </div>
+          <div id="absenceReasonList" class="space-y-2 max-h-60 overflow-y-auto text-xs">
+            <div class="p-3 bg-slate-50 rounded-lg text-slate-400 text-center italic">ไม่มีรายการแจ้งเหตุผล</div>
+          </div>
+        </div>
+
+        <!-- กล่องข้อเสนอแนะเพิ่มเติม -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
+          <div class="flex justify-between items-center">
+            <h4 class="text-xs font-bold text-slate-700">💬 ข้อเสนอแนะเพิ่มเติม</h4>
+            <span id="feedbackCountBadge" class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold">0 ข้อความ</span>
+          </div>
+          <div id="feedbackList" class="space-y-2 max-h-60 overflow-y-auto text-xs">
+            <div class="p-3 bg-slate-50 rounded-lg text-slate-400 text-center italic">ยังไม่มีข้อเสนอแนะ</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal: ศูนย์สร้าง & ปริ้นท์ QR Code แยก 3 โครงการ (สำหรับตั้งโต๊ะ / บูธ) -->
+  <div id="qrModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-5xl w-full p-5 md:p-7 shadow-2xl border border-slate-100 my-auto">
+      <div class="flex justify-between items-start pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="text-lg md:text-xl font-extrabold text-slate-900 flex items-center gap-2">
+            <span>🔗</span> ศูนย์รวมลิงก์ & QR Code (คัดลอกได้ทันที ไม่ต้องจำตัวต่อท้าย)
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">คัดลอกลิงก์ส่งให้พนักงานทำแบบประเมิน หรือส่งแดชบอร์ดเฉพาะเรื่องให้ รพ. ได้ในคลิกเดียว</p>
+        </div>
+        <button type="button" onclick="closeQrModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center transition">✕</button>
+      </div>
+
+      <!-- สรุปรวมปุ่มคัดลอกลิงก์ด่วน (ไม่ต้องพิมพ์หรือจำตัวต่อท้ายเอง) -->
+      <div class="mt-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 via-emerald-50/70 to-purple-50/70 border border-slate-200 shadow-2xs">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-extrabold text-slate-900 text-xs md:text-sm flex items-center gap-1.5">
+            <span>⚡</span> <span>ปุ่มลัดคัดลอกลิงก์ (กดปุ่มเดียวพร้อมส่งทันที ไม่ต้องพิมพ์ตัวต่อท้ายเอง)</span>
+          </h4>
+          <span class="text-[11px] text-slate-500 font-medium">คลิก "คัดลอก" แล้วนำไปวางส่งได้เลย</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <!-- กลุ่ม 1: สำหรับพนักงานทำแบบประเมิน -->
+          <div class="bg-white/95 p-3 rounded-xl border border-blue-200 shadow-2xs space-y-2">
+            <span class="font-bold text-blue-900 block border-b border-blue-100 pb-1 flex items-center gap-1">
+              <span>📑</span> <span>1. ลิงก์แบบประเมิน (สำหรับส่งให้พนักงาน)</span>
+            </span>
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-blue-50/60 hover:bg-blue-50 transition">
+                <span class="font-semibold text-blue-800">🩺 1. ตรวจสุขภาพประจำปี</span>
+                <div class="flex gap-1 shrink-0">
+                  <button type="button" onclick="copyServiceUrl('health')" class="px-2.5 py-1 bg-blue-600 text-white rounded-lg font-bold text-[11px] hover:bg-blue-700 shadow-2xs transition">คัดลอก</button>
+                  <button type="button" onclick="openTestLink('health')" class="px-2 py-1 bg-white border border-blue-300 text-blue-700 rounded-lg text-[11px] hover:bg-blue-100 transition">เปิด</button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-emerald-50/60 hover:bg-emerald-50 transition">
+                <span class="font-semibold text-emerald-800">💉 2. ฉีดวัคซีนไข้หวัดใหญ่</span>
+                <div class="flex gap-1 shrink-0">
+                  <button type="button" onclick="copyServiceUrl('vaccine')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px] hover:bg-emerald-700 shadow-2xs transition">คัดลอก</button>
+                  <button type="button" onclick="openTestLink('vaccine')" class="px-2 py-1 bg-white border border-emerald-300 text-emerald-700 rounded-lg text-[11px] hover:bg-emerald-100 transition">เปิด</button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-rose-50/60 hover:bg-rose-50 transition">
+                <span class="font-semibold text-rose-800">🩸 3. บริจาคโลหิต</span>
+                <div class="flex gap-1 shrink-0">
+                  <button type="button" onclick="copyServiceUrl('blood')" class="px-2.5 py-1 bg-rose-600 text-white rounded-lg font-bold text-[11px] hover:bg-rose-700 shadow-2xs transition">คัดลอก</button>
+                  <button type="button" onclick="openTestLink('blood')" class="px-2 py-1 bg-white border border-rose-300 text-rose-700 rounded-lg text-[11px] hover:bg-rose-100 transition">เปิด</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- กลุ่ม 2: สำหรับส่งโรงพยาบาล/คู่ค้า (ดูสรุปผลอย่างเดียว & ล็อกปี 2026) -->
+          <div class="bg-white/95 p-3 rounded-xl border border-emerald-200 shadow-2xs space-y-2">
+            <span class="font-bold text-emerald-900 block border-b border-emerald-100 pb-1 flex items-center gap-1">
+              <span>🏥</span> <span>2. ลิงก์แดชบอร์ด (สำหรับส่ง รพ. / คู่ค้า ดูอย่างเดียว)</span>
+            </span>
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-slate-50 hover:bg-emerald-50/60 transition">
+                <span class="font-semibold text-slate-800">🩺 ผลตรวจสุขภาพ (ล็อกปี 2026)</span>
+                <div class="flex gap-1 shrink-0">
+                  <button type="button" onclick="quickCopyHospitalUrl('health', '2026')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px] hover:bg-emerald-700 shadow-2xs transition">คัดลอก</button>
+                  <button type="button" onclick="quickOpenHospitalUrl('health', '2026')" class="px-2 py-1 bg-white border border-emerald-300 text-emerald-700 rounded-lg text-[11px] hover:bg-emerald-100 transition">เปิด</button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-slate-50 hover:bg-emerald-50/60 transition">
+                <span class="font-semibold text-slate-800">💉 ผลฉีดวัคซีน (ล็อกปี 2026)</span>
+                <div class="flex gap-1 shrink-0">
+                  <button type="button" onclick="quickCopyHospitalUrl('vaccine', '2026')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px] hover:bg-emerald-700 shadow-2xs transition">คัดลอก</button>
+                  <button type="button" onclick="quickOpenHospitalUrl('vaccine', '2026')" class="px-2 py-1 bg-white border border-emerald-300 text-emerald-700 rounded-lg text-[11px] hover:bg-emerald-100 transition">เปิด</button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-slate-50 hover:bg-emerald-50/60 transition">
+                <span class="font-semibold text-slate-800">🩸 ผลบริจาคโลหิต (ล็อกปี 2026)</span>
+                <div class="flex gap-1 shrink-0">
+                  <button type="button" onclick="quickCopyHospitalUrl('blood', '2026')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px] hover:bg-emerald-700 shadow-2xs transition">คัดลอก</button>
+                  <button type="button" onclick="quickOpenHospitalUrl('blood', '2026')" class="px-2 py-1 bg-white border border-emerald-300 text-emerald-700 rounded-lg text-[11px] hover:bg-emerald-100 transition">เปิด</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- URL Base Configuration: รองรับทั้ง GitHub Pages และ Google Apps Script -->
+      <div class="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-3.5">
+        <div>
+          <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+            <span>🌐</span> ลิงก์หน้าเว็บสำหรับสร้าง QR Code (Frontend URL / GitHub Pages):
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="qrFrontendUrlInput" placeholder="https://username.github.io/Survey_Checkup_Vacc/" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono text-slate-700" oninput="onQrFrontendUrlInputChange()">
+            <button type="button" onclick="manualSaveFrontendUrl()" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shrink-0 transition shadow-sm">💾 บันทึก URL หน้าเว็บ</button>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">ระบบจะใช้ลิงก์นี้ในการสร้าง QR Code ให้ผู้ประเมินสแกน (หากนำขึ้น GitHub Pages ลิงก์นี้จะไม่มีปัญหาเรื่องบัญชี Google แน่นอน 100%)</p>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200">
+          <label class="block font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+            <span>⚙️</span> ลิงก์เชื่อมโยง Google Apps Script (Backend Web App API URL):
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="qrBaseUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono text-slate-700" oninput="onQrBaseUrlInputChange()">
+            <button type="button" onclick="manualSaveBaseUrl()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shrink-0 transition shadow-sm">💾 บันทึก API URL</button>
+            <button type="button" onclick="autoDetectUrl()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl shrink-0 transition">ตรวจหา URL</button>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">ใช้สำหรับส่งข้อมูลผลประเมินไปบันทึกลง Google Sheet และดึงรายงานสรุปผล (ต้องลงท้ายด้วย <code>/exec</code>)</p>
+        </div>
+      </div>
+
+      <!-- แถบเตือนกรณี URL เป็น file:// หรือ sandbox -->
+      <div id="qrWarningBanner" class="hidden mt-3 p-3.5 bg-amber-50 border-2 border-amber-300 rounded-2xl text-xs text-amber-900 flex items-start gap-2.5 shadow-sm">
+        <span class="text-xl shrink-0">⚠️</span>
+        <div class="space-y-1">
+          <p class="font-extrabold text-amber-900">คำแนะนำการใช้งาน QR Code:</p>
+          <p class="leading-relaxed text-slate-700">
+            ขณะนี้ลิงก์ที่ใช้คือ <code id="detectedUrlSnippet" class="bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-mono font-bold">...</code> ซึ่งหากเปิดเป็นไฟล์ในเครื่องคอมพิวเตอร์ มือถือคนอื่นจะไม่สามารถสแกนได้
+          </p>
+          <p class="font-bold text-blue-700 pt-0.5">
+            👉 แนะนำ: นำโค้ดนี้ขึ้น <b>GitHub Pages</b> หรือใส่ลิงก์ <b>Web App URL</b> ของ Google Apps Script ในช่องด้านบนค่ะ
+          </p>
+        </div>
+      </div>
+
+      <!-- การ์ด QR Code 3 โครงการแยกกัน -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        
+        <!-- การ์ด 1: ตรวจสุขภาพประจำปี (ธีมสีน้ำเงิน) -->
+        <div class="p-4 rounded-2xl border-2 border-blue-400 bg-blue-50/50 flex flex-col justify-between space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center gap-1">
+              <span>🩺</span> จุดที่ 1: ตรวจสุขภาพ
+            </span>
+            <span class="text-[11px] text-blue-700 font-semibold">ชีต: ผลประเมิน_ตรวจสุขภาพ</span>
+          </div>
+          <div class="text-center py-2">
+            <h4 class="font-extrabold text-blue-900 text-base">การตรวจสุขภาพประจำปี</h4>
+            <p class="text-xs text-blue-700 font-medium">สแกนเพื่อประเมินจุดตรวจสุขภาพ</p>
+            <div class="mt-2.5 inline-block p-2.5 bg-white rounded-2xl shadow-sm border border-blue-200">
+              <img id="qrImgHealth" src="" alt="QR Code ตรวจสุขภาพ" class="w-36 h-36 mx-auto rounded-lg">
+            </div>
+            <p id="qrUrlHealthText" class="text-[10px] text-slate-500 font-mono mt-2 break-all max-h-8 overflow-hidden"></p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="copyServiceUrl('health')" class="w-full py-2 bg-white hover:bg-blue-50 text-blue-700 border border-blue-300 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1">
+              <span>📋</span> คัดลอกลิงก์
+            </button>
+            <button type="button" onclick="openTestLink('health')" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1 shadow-sm">
+              <span>🚀</span> ทดลองเปิด
+            </button>
+          </div>
+        </div>
+
+        <!-- การ์ด 2: ฉีดวัคซีนไข้หวัดใหญ่ (ธีมสีเขียวมรกต) -->
+        <div class="p-4 rounded-2xl border-2 border-emerald-400 bg-emerald-50/50 flex flex-col justify-between space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center gap-1">
+              <span>💉</span> จุดที่ 2: ฉีดวัคซีน
+            </span>
+            <span class="text-[11px] text-emerald-700 font-semibold">ชีต: ผลประเมิน_ฉีดวัคซีน</span>
+          </div>
+          <div class="text-center py-2">
+            <h4 class="font-extrabold text-emerald-900 text-base">การฉีดวัคซีนไข้หวัดใหญ่</h4>
+            <p class="text-xs text-emerald-700 font-medium">สแกนเพื่อประเมินจุดฉีดวัคซีน</p>
+            <div class="mt-2.5 inline-block p-2.5 bg-white rounded-2xl shadow-sm border border-emerald-200">
+              <img id="qrImgVaccine" src="" alt="QR Code ฉีดวัคซีน" class="w-36 h-36 mx-auto rounded-lg">
+            </div>
+            <p id="qrUrlVaccineText" class="text-[10px] text-slate-500 font-mono mt-2 break-all max-h-8 overflow-hidden"></p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="copyServiceUrl('vaccine')" class="w-full py-2 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1">
+              <span>📋</span> คัดลอกลิงก์
+            </button>
+            <button type="button" onclick="openTestLink('vaccine')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1 shadow-sm">
+              <span>🚀</span> ทดลองเปิด
+            </button>
+          </div>
+        </div>
+
+        <!-- การ์ด 3: บริจาคโลหิต (ธีมสีกุหลาบ/แดง Rose) -->
+        <div class="p-4 rounded-2xl border-2 border-rose-400 bg-rose-50/50 flex flex-col justify-between space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold text-xs flex items-center gap-1">
+              <span>🩸</span> จุดที่ 3: บริจาคโลหิต
+            </span>
+            <span class="text-[11px] text-rose-700 font-semibold">ชีต: ผลประเมิน_บริจาคโลหิต</span>
+          </div>
+          <div class="text-center py-2">
+            <h4 class="font-extrabold text-rose-900 text-base">การบริจาคโลหิต</h4>
+            <p class="text-xs text-rose-700 font-medium">สแกนเพื่อประเมินจุดบริจาคโลหิต</p>
+            <div class="mt-2.5 inline-block p-2.5 bg-white rounded-2xl shadow-sm border border-rose-200">
+              <img id="qrImgBlood" src="" alt="QR Code บริจาคโลหิต" class="w-36 h-36 mx-auto rounded-lg">
+            </div>
+            <p id="qrUrlBloodText" class="text-[10px] text-slate-500 font-mono mt-2 break-all max-h-8 overflow-hidden"></p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="copyServiceUrl('blood')" class="w-full py-2 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1">
+              <span>📋</span> คัดลอกลิงก์
+            </button>
+            <button type="button" onclick="openTestLink('blood')" class="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1 shadow-sm">
+              <span>🚀</span> ทดลองเปิด
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ส่วนสร้างลิงก์แดชบอร์ดส่งให้ รพ. / คู่ค้าภายนอก (Read-Only & ล็อกปี) -->
+      <div class="mt-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-300">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-1.5 font-bold text-emerald-950 text-sm">
+              <span>🏥</span>
+              <span>สร้างลิงก์แดชบอร์ดส่งให้ รพ. / คู่ค้าภายนอก (Read-Only)</span>
+            </div>
+            <p class="text-xs text-emerald-700 mt-0.5">
+              คู่ค้าจะดูได้เฉพาะผลโครงการของตนเอง และล็อกเฉพาะปีที่อนุญาต (ไม่เห็นโครงการอื่นและไม่เห็นข้อมูลปีอื่น)
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="shareHospitalService" onchange="updateHospitalShareUrl()" class="px-2.5 py-1.5 text-xs font-semibold bg-white border border-emerald-300 rounded-xl text-emerald-900 focus:outline-none shadow-2xs">
+              <option value="health">🩺 ตรวจสุขภาพประจำปี</option>
+              <option value="vaccine">💉 ฉีดวัคซีนไข้หวัดใหญ่</option>
+              <option value="blood">🩸 บริจาคโลหิต</option>
+              <option value="all">📊 ทุกโครงการ (Admin)</option>
+            </select>
+            <select id="shareHospitalYear" onchange="updateHospitalShareUrl()" class="px-2.5 py-1.5 text-xs font-semibold bg-white border border-emerald-300 rounded-xl text-emerald-900 focus:outline-none shadow-2xs">
+              <option value="2026">🔒 ล็อกปี 2026 (ปีปัจจุบัน)</option>
+              <option value="all">🌐 เปิดทุกปี (รพ.เดิม ดูเปรียบเทียบย้อนหลังได้)</option>
+            </select>
+            <button type="button" onclick="copyHospitalShareUrl()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1">
+              <span>📋</span> คัดลอกลิงก์ส่ง รพ.
+            </button>
+            <button type="button" onclick="testHospitalShareUrl()" class="px-2.5 py-1.5 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-400 font-bold text-xs rounded-xl transition">
+              <span>🚀</span> ทดลองเปิด
+            </button>
+          </div>
+        </div>
+        <div class="mt-2.5 text-[11px] font-mono text-emerald-900 bg-white/90 p-2.5 rounded-xl border border-emerald-200 break-all select-all flex items-center justify-between gap-2 shadow-2xs">
+          <span id="shareHospitalUrlPreview">(กำลังสร้างลิงก์...)</span>
+        </div>
+      </div>
+
+      <!-- ส่วนพิมพ์การ์ดตั้งโต๊ะ -->
+      <div class="mt-5 pt-3 border-t border-slate-200 flex flex-wrap justify-between items-center gap-3">
+        <div class="text-xs text-slate-500">
+          💡 สั่งพิมพ์ป้าย QR Code สำหรับนำไปวางประจำจุดคัดกรอง หรือบอร์ดกิจกรรม:
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="printStandeeCombined()" class="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+            <span>📄</span> พิมพ์รวม 3 จุด (ใน 1 แผ่น A4)
+          </button>
+          <button type="button" onclick="printStandeeSeparate()" class="px-3.5 py-2.5 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5">
+            <span>🖨️</span> พิมพ์แยก 3 แผ่น (จุดละ 1 แผ่น A4)
+          </button>
+          <button type="button" onclick="closeQrModal()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs rounded-xl transition">
+            ปิดหน้าต่าง
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ส่วนสำหรับแสดงตอน Print ป้ายตั้งโต๊ะ (ถูกซ่อนไว้ในหน้าจอปกติ) -->
+  <div id="qrPrintArea" class="hidden p-6 max-w-5xl mx-auto print-mode-combined">
+    <div class="print-header-intro text-center mb-5">
+      <h2 class="text-2xl font-black text-slate-900">แบบประเมินความพึงพอใจการจัดกิจกรรมสุขภาพ</h2>
+      <p class="text-sm text-slate-600">กรุณาสแกน QR Code ตรงตามกิจกรรมที่ท่านเข้ารับบริการ</p>
+    </div>
+    <div class="print-grid-container grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- ป้าย 1: ตรวจสุขภาพ -->
+      <div class="print-card border-4 border-blue-600 rounded-3xl p-6 text-center bg-blue-50/30 flex flex-col items-center justify-between">
+        <div>
+          <div class="print-card-icon w-16 h-16 rounded-2xl bg-blue-600 text-white text-3xl font-bold flex items-center justify-center mx-auto mb-3 shadow">🩺</div>
+          <h3 class="print-card-title text-xl font-black text-blue-900 mb-1">การตรวจสุขภาพประจำปี</h3>
+          <p class="print-card-sub text-xs text-blue-700 font-semibold mb-4">สแกนเพื่อทำแบบประเมินการตรวจสุขภาพ</p>
+        </div>
+        <div class="print-qr-box p-3 bg-white rounded-2xl border-2 border-blue-300 shadow-sm">
+          <img id="printQrImgHealth" src="" alt="QR ตรวจสุขภาพ" class="print-qr-img w-48 h-48 mx-auto">
+        </div>
+        <div class="print-card-badge mt-4 text-xs font-bold text-blue-900 bg-white px-4 py-1.5 rounded-full border border-blue-200">
+          📍 โต๊ะจุดตรวจสุขภาพประจำปี
+        </div>
+      </div>
+      <!-- ป้าย 2: ฉีดวัคซีน -->
+      <div class="print-card border-4 border-emerald-600 rounded-3xl p-6 text-center bg-emerald-50/30 flex flex-col items-center justify-between">
+        <div>
+          <div class="print-card-icon w-16 h-16 rounded-2xl bg-emerald-600 text-white text-3xl font-bold flex items-center justify-center mx-auto mb-3 shadow">💉</div>
+          <h3 class="print-card-title text-xl font-black text-emerald-900 mb-1">การฉีดวัคซีนไข้หวัดใหญ่</h3>
+          <p class="print-card-sub text-xs text-emerald-700 font-semibold mb-4">สแกนเพื่อทำแบบประเมินการฉีดวัคซีน</p>
+        </div>
+        <div class="print-qr-box p-3 bg-white rounded-2xl border-2 border-emerald-300 shadow-sm">
+          <img id="printQrImgVaccine" src="" alt="QR ฉีดวัคซีน" class="print-qr-img w-48 h-48 mx-auto">
+        </div>
+        <div class="print-card-badge mt-4 text-xs font-bold text-emerald-900 bg-white px-4 py-1.5 rounded-full border border-emerald-200">
+          📍 โต๊ะจุดฉีดวัคซีนไข้หวัดใหญ่
+        </div>
+      </div>
+      <!-- ป้าย 3: บริจาคโลหิต -->
+      <div class="print-card border-4 border-rose-600 rounded-3xl p-6 text-center bg-rose-50/30 flex flex-col items-center justify-between">
+        <div>
+          <div class="print-card-icon w-16 h-16 rounded-2xl bg-rose-600 text-white text-3xl font-bold flex items-center justify-center mx-auto mb-3 shadow">🩸</div>
+          <h3 class="print-card-title text-xl font-black text-rose-900 mb-1">การบริจาคโลหิต</h3>
+          <p class="print-card-sub text-xs text-rose-700 font-semibold mb-4">สแกนเพื่อทำแบบประเมินการบริจาคโลหิต</p>
+        </div>
+        <div class="print-qr-box p-3 bg-white rounded-2xl border-2 border-rose-300 shadow-sm">
+          <img id="printQrImgBlood" src="" alt="QR บริจาคโลหิต" class="print-qr-img w-48 h-48 mx-auto">
+        </div>
+        <div class="print-card-badge mt-4 text-xs font-bold text-rose-900 bg-white px-4 py-1.5 rounded-full border border-rose-200">
+          📍 โต๊ะจุดบริจาคโลหิต
+        </div>
+      </div>
+    </div>
+    <div class="print-header-intro mt-6 text-center text-xs text-slate-500">
+      * ระบบจะบันทึกข้อมูลแยกแผ่นงาน (ชีต) อัตโนมัติใน Google Spreadsheet เดียวกัน
+    </div>
+  </div>
+
+  <!-- Pop-up Card แจ้งบันทึกสำเร็จ -->
+  <div id="successModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100 animate-bounce-short">
+      <div id="successIconBg" class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner text-2xl font-bold">
+        ✓
+      </div>
+      <h3 id="modalTitle" class="text-lg font-extrabold text-slate-900 mb-1">บันทึกข้อมูลสำเร็จ!</h3>
+      <p id="modalMessage" class="text-xs md:text-sm text-slate-500 mb-6 leading-relaxed">
+        ขอบคุณสำหรับการสละเวลาประเมินความพึงพอใจค่ะ
+      </p>
+      <button type="button" onclick="closeSuccessModal()" id="successModalBtn" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-200 transition">
+        ตกลง
+      </button>
+    </div>
+  </div>
+
+  <!-- Admin Password Modal -->
+  <div id="passwordModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl">
+      <h3 class="text-base font-bold text-slate-800 mb-1">ยืนยันรหัสผ่าน Admin</h3>
+      <p class="text-xs text-slate-500 mb-3">กรุณาระบุรหัสผ่านเพื่อเข้าใช้งาน</p>
+      <input type="password" id="adminPasswordInput" placeholder="รหัสผ่าน" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm mb-4">
+      <div class="flex justify-end space-x-2">
+        <button type="button" onclick="closePasswordModal()" class="px-3.5 py-2 text-xs text-slate-600">ยกเลิก</button>
+        <button type="button" onclick="verifyPassword()" class="px-4 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Service Settings Modal (Admin) -->
+  <div id="serviceModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div>
+        <h3 class="text-base font-bold text-slate-800">⚙️ กำหนดโครงการเริ่มต้น (สำหรับ QR กลาง)</h3>
+        <p class="text-xs text-slate-500 mt-0.5">กรณีมีพนักงานเข้าใช้งานผ่านลิงก์กลางที่ไม่มีพารามิเตอร์ต่อท้าย</p>
+      </div>
+      <div class="space-y-2.5 text-xs">
+        <label class="flex items-center p-3.5 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-blue-500 transition" id="lblModeHealth">
+          <input type="radio" name="adminServiceChoice" value="ตรวจสุขภาพประจำปี" checked class="h-4 w-4 text-blue-600">
+          <div class="ml-3">
+            <span class="font-bold text-slate-800 block text-sm">🩺 การตรวจสุขภาพประจำปี</span>
+            <span class="text-slate-500 block text-[11px]">แบบประเมิน 5 ข้อ (ธีมสีน้ำเงิน • บันทึกลงชีต: ผลประเมิน_ตรวจสุขภาพ)</span>
+          </div>
+        </label>
+        <label class="flex items-center p-3.5 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-emerald-500 transition" id="lblModeVaccine">
+          <input type="radio" name="adminServiceChoice" value="ฉีดวัคซีนไข้หวัดใหญ่" class="h-4 w-4 text-emerald-600">
+          <div class="ml-3">
+            <span class="font-bold text-slate-800 block text-sm">💉 การฉีดวัคซีนไข้หวัดใหญ่</span>
+            <span class="text-slate-500 block text-[11px]">แบบประเมิน 5 ข้อ (ธีมสีเขียว • บันทึกลงชีต: ผลประเมิน_ฉีดวัคซีน)</span>
+          </div>
+        </label>
+        <label class="flex items-center p-3.5 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-rose-500 transition" id="lblModeBlood">
+          <input type="radio" name="adminServiceChoice" value="บริจาคโลหิต" class="h-4 w-4 text-rose-600">
+          <div class="ml-3">
+            <span class="font-bold text-slate-800 block text-sm">🩸 โครงการบริจาคโลหิต</span>
+            <span class="text-slate-500 block text-[11px]">แบบประเมิน 7 ข้อ (ธีมสีแดง • บันทึกลงชีต: ผลประเมิน_บริจาคโลหิต)</span>
+          </div>
+        </label>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button type="button" onclick="closeServiceModal()" class="px-4 py-2 text-xs text-slate-600 font-semibold rounded-lg hover:bg-slate-100">ยกเลิก</button>
+        <button type="button" id="saveServiceBtn" onclick="saveAdminActiveService()" class="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition">บันทึกและเปิดใช้งาน</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // การตั้งค่าชุดคำถาม สี และเอกลักษณ์แต่ละโครงการ
+    var SERVICE_CONFIGS = {
+      "ตรวจสุขภาพประจำปี": {
+        key: "health",
+        title: "แบบประเมินความพึงพอใจ: ตรวจสุขภาพประจำปี",
+        shortName: "ตรวจสุขภาพประจำปี",
+        tag: "ตรวจสุขภาพ",
+        logo: "🩺",
+        themeClass: "theme-health",
+        bodyBg: "bg-slate-50",
+        headerBorderColor: "#2563eb",
+        logoBg: "bg-gradient-to-br from-blue-600 to-indigo-700",
+        heroGradient: "from-blue-600 via-blue-700 to-indigo-800",
+        heroNotice: "💡 แบบประเมินนี้สำหรับ<strong>การตรวจสุขภาพประจำปี</strong>เท่านั้น (หากท่านฉีดวัคซีนไข้หวัดใหญ่ด้วย กรุณาสแกน QR Code ประจำจุดฉีดวัคซีนเพื่อประเมินแยกอีกชุดนะคะ)",
+        formBorderColor: "border-blue-200",
+        badgeColor: "text-blue-800 border-blue-300",
+        btnSubmitClass: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-200",
+        chartColor: "#3b82f6",
+        scaleMax: 5,
+        scaleLegend: "1 = น้อยที่สุด • 5 = มากที่สุด",
+        evalTitle: "ระดับความพึงพอใจต่อการตรวจสุขภาพประจำปี",
+        attText: "✅ เข้ารับการตรวจสุขภาพเรียบร้อยแล้ว",
+        notAttText: "❌ ไม่ได้เข้ารับการตรวจสุขภาพ",
+        notAttHeader: "⚠️ ระบุเหตุผลที่ไม่ได้ตรวจสุขภาพ (ระบบจะตัดการประเมินคะแนนออกให้อัตโนมัติ)",
+        reasons: [
+          "ลางาน / ติดภารกิจส่วนตัว",
+          "ติดงานด่วนหน้างาน",
+          "รับบริการจากสถานพยาบาลภายนอกมาแล้ว",
+          "สภาพร่างกายไม่พร้อม (เช่น มีไข้, ป่วย)",
+          "อื่นๆ"
+        ],
+        questions: [
+          "1. การประชาสัมพันธ์ข้อมูลและการเตรียมตัวก่อนตรวจ (เช่น การงดน้ำ/อาหาร)",
+          "2. ความสะดวกและความเหมาะสมของสถานที่และจุดตรวจ",
+          "3. ความรวดเร็วและการบริหารเวลาในแต่ละจุดตรวจ",
+          "4. การให้บริการและการให้คำแนะนำของแพทย์/พยาบาล/เจ้าหน้าที่",
+          "5. ภาพรวมความพึงพอใจต่อการตรวจสุขภาพประจำปี"
+        ],
+        chartLabels: [
+          ['ข้อ 1', 'ประชาสัมพันธ์'],
+          ['ข้อ 2', 'สถานที่/จุดตรวจ'],
+          ['ข้อ 3', 'ความรวดเร็ว'],
+          ['ข้อ 4', 'การบริการ จนท.'],
+          ['ข้อ 5', 'ภาพรวม']
+        ],
+        chartLabelsFull: ['ข้อ 1: การประชาสัมพันธ์', 'ข้อ 2: สถานที่/จุดตรวจ', 'ข้อ 3: ความรวดเร็ว/เวลา', 'ข้อ 4: การให้บริการ จนท.', 'ข้อ 5: ภาพรวม']
+      },
+      "ฉีดวัคซีนไข้หวัดใหญ่": {
+        key: "vaccine",
+        title: "แบบประเมินความพึงพอใจ: ฉีดวัคซีนไข้หวัดใหญ่",
+        shortName: "ฉีดวัคซีนไข้หวัดใหญ่",
+        tag: "ฉีดวัคซีน",
+        logo: "💉",
+        themeClass: "theme-vaccine",
+        bodyBg: "bg-[#f2faf5]", // สีพื้นหลังเขียวมินต์อ่อนละมุน แตกต่างชัดเจน
+        headerBorderColor: "#059669",
+        logoBg: "bg-gradient-to-br from-emerald-600 to-teal-700",
+        heroGradient: "from-emerald-600 via-emerald-700 to-teal-800",
+        heroNotice: "💡 แบบประเมินนี้สำหรับ<strong>การฉีดวัคซีนไข้หวัดใหญ่</strong>เท่านั้น (หากท่านตรวจสุขภาพประจำปีด้วย กรุณาสแกน QR Code ประจำจุดตรวจสุขภาพเพื่อประเมินแยกอีกชุดนะคะ)",
+        formBorderColor: "border-emerald-300",
+        badgeColor: "text-emerald-800 border-emerald-300",
+        btnSubmitClass: "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-200",
+        chartColor: "#059669",
+        scaleMax: 5,
+        scaleLegend: "1 = น้อยที่สุด • 5 = มากที่สุด",
+        evalTitle: "ระดับความพึงพอใจต่อการฉีดวัคซีนไข้หวัดใหญ่",
+        attText: "✅ ได้รับการฉีดวัคซีนเรียบร้อยแล้ว",
+        notAttText: "❌ ไม่ได้รับการฉีดวัคซีน",
+        notAttHeader: "⚠️ ระบุเหตุผลที่ไม่ได้ฉีดวัคซีน (ระบบจะตัดการประเมินคะแนนออกให้อัตโนมัติ)",
+        reasons: [
+          "ลางาน / ติดภารกิจส่วนตัว",
+          "ติดงานด่วนหน้างาน",
+          "รับการฉีดวัคซีนจากภายนอกมาแล้ว",
+          "สภาพร่างกายไม่พร้อม (เช่น มีไข้, ป่วย)",
+          "อื่นๆ"
+        ],
+        questions: [
+          "1. การประชาสัมพันธ์ ลงทะเบียน, ซื้อวัคซีนไข้หวัดใหญ่สำหรับญาติ",
+          "2. ความสะดวกรวดเร็วของขั้นตอนและการบริหารเวลารอคอย",
+          "3. ความชำนาญและความนุ่มนวลของพยาบาลขณะฉีดวัคซีน",
+          "4. การให้คำแนะนำเรื่องการดูแลตนเองและสังเกตอาการข้างเคียงหลังฉีด",
+          "5. ภาพรวมความพึงพอใจต่อโครงการฉีดวัคซีนไข้หวัดใหญ่"
+        ],
+        chartLabels: [
+          ['ข้อ 1', 'ประชาสัมพันธ์'],
+          ['ข้อ 2', 'สะดวกรวดเร็ว'],
+          ['ข้อ 3', 'ชำนาญพยาบาล'],
+          ['ข้อ 4', 'คำแนะนำหลังฉีด'],
+          ['ข้อ 5', 'ภาพรวม']
+        ],
+        chartLabelsFull: ['ข้อ 1: การประชาสัมพันธ์', 'ข้อ 2: ความสะดวกรวดเร็ว', 'ข้อ 3: ความชำนาญพยาบาล', 'ข้อ 4: คำแนะนำหลังฉีด', 'ข้อ 5: ภาพรวม']
+      },
+      "บริจาคโลหิต": {
+        key: "blood",
+        title: "แบบประเมินความพึงพอใจ: โครงการบริจาคโลหิต",
+        shortName: "บริจาคโลหิต",
+        tag: "บริจาคโลหิต",
+        logo: "🩸",
+        themeClass: "theme-blood",
+        bodyBg: "bg-[#fff7f7]", // สีพื้นหลังแดงชมพูอ่อน
+        headerBorderColor: "#e11d48",
+        logoBg: "bg-gradient-to-br from-rose-600 to-red-700",
+        heroGradient: "from-rose-600 via-rose-700 to-red-800",
+        heroNotice: "💡 แบบประเมินนี้สำหรับ<strong>โครงการบริจาคโลหิต</strong>เท่านั้น ขอขอบคุณที่ร่วมบริจาคโลหิตเพื่อต่อชีวิตผู้ป่วยค่ะ",
+        formBorderColor: "border-rose-300",
+        badgeColor: "text-rose-800 border-rose-300",
+        btnSubmitClass: "bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 shadow-rose-200",
+        chartColor: "#e11d48",
+        scaleMax: 3,
+        scaleLegend: "1 = ควรปรับปรุง • 2 = พอใจ • 3 = พอใจมาก",
+        evalTitle: "ระดับความพึงพอใจต่อโครงการบริจาคโลหิต",
+        attText: "✅ เข้าร่วมและบริจาคโลหิตเรียบร้อยแล้ว",
+        notAttText: "❌ ไม่ได้บริจาคโลหิต / คัดกรองไม่ผ่าน",
+        notAttHeader: "⚠️ ระบุเหตุผลที่ไม่ได้บริจาคโลหิต (ระบบจะตัดการประเมินคะแนนออกให้อัตโนมัติ)",
+        reasons: [
+          "ความเข้มข้นของเลือดไม่ผ่านเกณฑ์ (ฮีโมโกลบินต่ำ / เลือดลอย)",
+          "สภาพร่างกายไม่พร้อม (พักผ่อนน้อย / อดนอน / มีไข้ / ป่วย)",
+          "ทานยาบางชนิด / อยู่ระหว่างรักษาโรค",
+          "น้ำหนักตัวไม่ถึงเกณฑ์ (น้อยกว่า 45 กก.)",
+          "เพิ่งบริจาคโลหิตมาไม่ถึง 3 เดือน",
+          "ติดงานด่วนหน้างาน",
+          "ลางาน / ติดภารกิจส่วนตัว",
+          "อื่นๆ"
+        ],
+        questions: [
+          "1. ความเหมาะสมของสถานที่",
+          "2. ระยะเวลาในการบริจาคโลหิต (9.00 - 11.40 น.)",
+          "3. การให้บริการของเจ้าหน้าที่",
+          "4. การประชาสัมพันธ์ข้อมูลโครงการ",
+          "5. ของที่ระลึกสำหรับผู้บริจาค",
+          "6. ระบบการลงทะเบียนล่วงหน้า",
+          "7. ภาพรวมความพึงพอใจต่อโครงการบริจาคโลหิต"
+        ],
+        chartLabels: [
+          ['ข้อ 1', 'สถานที่'],
+          ['ข้อ 2', 'เวลาบริจาค'],
+          ['ข้อ 3', 'บริการ จนท.'],
+          ['ข้อ 4', 'ประชาสัมพันธ์'],
+          ['ข้อ 5', 'ของที่ระลึก'],
+          ['ข้อ 6', 'ลงทะเบียน'],
+          ['ข้อ 7', 'ภาพรวม']
+        ],
+        chartLabelsFull: ['ข้อ 1: สถานที่', 'ข้อ 2: เวลา (9.00-11.40)', 'ข้อ 3: การบริการ จนท.', 'ข้อ 4: การประชาสัมพันธ์', 'ข้อ 5: ของที่ระลึก', 'ข้อ 6: ระบบลงทะเบียน', 'ข้อ 7: ภาพรวม']
+      }
+    };
+
+    var ADMIN_PASSWORD = "ad2026";
+    var isAdmin = false;
+    var pendingAction = null;
+    var currentService = "ตรวจสุขภาพประจำปี";
+    var currentDashboardService = "ตรวจสุขภาพประจำปี";
+    var currentAttendance = "attended";
+    var scoresData = [];
+    var localSubmissions = [];
+    var chartInstance = null;
+    var overviewPieChartInstance = null;
+    var isFetchingData = false;
+    var isDirectService = false;
+
+    // ชุดสีสำหรับกราฟแท่งตามภาพตัวอย่าง
+    var CRITERIA_COLORS = ['#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#0f172a', '#f97316', '#8b5cf6'];
+
+    function cleanTemplateVar(val) {
+      if (!val || typeof val !== 'string') return '';
+      if (val.indexOf('<?') !== -1 || val.indexOf('?>') !== -1) return '';
+      return val.trim();
+    }
+
+    // รับค่าโครงการที่เปิดใช้งานจากเซิร์ฟเวอร์ Apps Script ผ่าน template (หากมี)
+    var SERVER_ACTIVE_SERVICE = cleanTemplateVar("<?= typeof serverActiveService !== 'undefined' ? serverActiveService : '' ?>");
+    var SERVER_IS_DEDICATED = cleanTemplateVar("<?= typeof isDedicated !== 'undefined' ? isDedicated : '' ?>");
+    var SERVER_WEB_APP_URL = cleanTemplateVar("<?= typeof webAppUrl !== 'undefined' ? webAppUrl : '' ?>");
+    var SERVER_REPORT_SERVICE = cleanTemplateVar("<?= typeof serverReportService !== 'undefined' ? serverReportService : '' ?>");
+    var SERVER_REPORT_YEAR = cleanTemplateVar("<?= typeof serverReportYear !== 'undefined' ? serverReportYear : '' ?>");
+    var isGuestReport = false;
+    var guestReportService = null;
+    var lockedYearsList = [];
+
+    var DEFAULT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbycXZnNRLKjlWHw-AqIfJgyfwB0TVXrjaa0T6UAPUVwVyQrdivBSy5kl2W55HG8tkbBw/exec";
+    var CACHED_WEB_APP_URL = '';
+    try { CACHED_WEB_APP_URL = localStorage.getItem('hana_survey_webapp_url') || ''; } catch(e) {}
+    var REAL_WEB_APP_URL = (SERVER_WEB_APP_URL && SERVER_WEB_APP_URL.indexOf('script.google.com') !== -1) ? SERVER_WEB_APP_URL : ((CACHED_WEB_APP_URL && CACHED_WEB_APP_URL.indexOf('script.google.com') !== -1) ? CACHED_WEB_APP_URL : DEFAULT_WEB_APP_URL);
+
+    // ดึง URL ของ Google Apps Script Web App สำหรับเป็น Backend API
+    function getBackendApiUrl() {
+      var input = document.getElementById('qrBaseUrlInput');
+      var inputVal = input ? input.value.trim() : '';
+      if (inputVal && inputVal.indexOf('script.google.com') !== -1) {
+        return inputVal.split('?')[0];
+      }
+      if (typeof REAL_WEB_APP_URL !== 'undefined' && REAL_WEB_APP_URL && REAL_WEB_APP_URL.indexOf('script.google.com') !== -1) {
+        return REAL_WEB_APP_URL.split('?')[0];
+      }
+      try {
+        var cached = localStorage.getItem('hana_survey_webapp_url');
+        if (cached && cached.indexOf('script.google.com') !== -1) return cached.split('?')[0];
+      } catch(e) {}
+      return DEFAULT_WEB_APP_URL;
+    }
+
+    // ดึง URL ของหน้าเว็บสำหรับแชร์ / สร้าง QR Code (เช่น GitHub Pages)
+    function getPublicFrontendUrl() {
+      var input = document.getElementById('qrFrontendUrlInput');
+      var inputVal = input ? input.value.trim() : '';
+      if (inputVal && inputVal.startsWith('http')) {
+        return inputVal.split('?')[0];
+      }
+      try {
+        var cached = localStorage.getItem('hana_survey_frontend_url');
+        if (cached && cached.startsWith('http')) return cached.split('?')[0];
+      } catch(e) {}
+      // ถ้าเปิดบน GitHub Pages หรือ Custom Domain ภายนอกที่ไม่ใช่ Google
+      if (window.location.protocol.startsWith('http') && window.location.hostname.indexOf('google') === -1) {
+        return window.location.origin + window.location.pathname;
+      }
+      // ถ้าเปิดใน Apps Script
+      return getBackendApiUrl();
+    }
+
+    // ฟังก์ชันส่วนกลางสำหรับเรียก Backend API ทั้งบน Apps Script และ GitHub Pages
+    function callBackendApi(action, data, onSuccess, onError) {
+      // 1. ถ้าเปิดอยู่ภายใน Google Apps Script Web App ให้ใช้ google.script.run
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        var runner = google.script.run
+          .withSuccessHandler(function(res) {
+            if (typeof onSuccess === 'function') onSuccess(res);
+          })
+          .withFailureHandler(function(err) {
+            if (typeof onError === 'function') onError(err);
+          });
+
+        if (action === 'submitEvaluation') {
+          runner.submitEvaluation(data);
+          return;
+        } else if (action === 'getDashboardData') {
+          runner.getDashboardData();
+          return;
+        } else if (action === 'setActiveService') {
+          runner.setActiveService(data);
+          return;
+        } else if (action === 'testAuth') {
+          if (typeof onSuccess === 'function') onSuccess(data === 'ad2026');
+          return;
+        }
+      }
+
+      // 2. ถ้าเปิดบน GitHub Pages หรือเว็บไซต์ภายนอก ให้เรียกผ่าน fetch API
+      var apiUrl = getBackendApiUrl();
+      if (!apiUrl || apiUrl.indexOf('script.google.com') === -1) {
+        var errObj = new Error('ยังไม่ได้กำหนด Web App API URL ค่ะ');
+        if (typeof onError === 'function') onError(errObj);
+        return;
+      }
+
+      if (action === 'getDashboardData') {
+        var fetchUrl = apiUrl + (apiUrl.indexOf('?') === -1 ? '?' : '&') + 'action=getDashboardData&_t=' + Date.now();
+        fetch(fetchUrl)
+          .then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
+          .then(function(json) {
+            if (typeof onSuccess === 'function') onSuccess(json);
+          })
+          .catch(function(err) {
+            console.error('Fetch getDashboardData error:', err);
+            if (typeof onError === 'function') onError(err);
+          });
+      } else if (action === 'submitEvaluation') {
+        // ส่งแบบ text/plain เพื่อให้เป็น CORS Simple Request หลีกเลี่ยง OPTIONS Preflight ของ Google
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'submitEvaluation', data: data })
+        })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(json) {
+          if (typeof onSuccess === 'function') onSuccess(json);
+        })
+        .catch(function(err) {
+          console.warn('POST failed, attempting GET fallback:', err);
+          // Fallback ด้วย GET query parameter กรณีเบราว์เซอร์ติด CORS POST
+          var fallbackUrl = apiUrl + (apiUrl.indexOf('?') === -1 ? '?' : '&') + 
+            'action=submitEvaluation&data=' + encodeURIComponent(JSON.stringify(data)) + '&_t=' + Date.now();
+          fetch(fallbackUrl)
+            .then(function(res) { return res.json(); })
+            .then(function(json) {
+              if (typeof onSuccess === 'function') onSuccess(json);
+            })
+            .catch(function(err2) {
+              if (typeof onError === 'function') onError(err2);
+            });
+        });
+      } else if (action === 'setActiveService') {
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'setActiveService', serviceName: data })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(json) {
+          if (typeof onSuccess === 'function') onSuccess(json);
+        })
+        .catch(function(err) {
+          if (typeof onError === 'function') onError(err);
+        });
+      }
+    }
+
+    function parseServiceParam(param) {
+      if (!param) return null;
+      var p = param.toString().toLowerCase().trim();
+      if (p === 'health' || p === 'health_only' || p === 'checkup' || p === 'ตรวจสุขภาพ' || p === 'ตรวจสุขภาพประจำปี') return 'ตรวจสุขภาพประจำปี';
+      if (p === 'vaccine' || p === 'vaccine_only' || p === 'vac' || p === 'vax' || p === 'วัคซีน' || p === 'ฉีดวัคซีน' || p === 'ฉีดวัคซีนไข้หวัดใหญ่') return 'ฉีดวัคซีนไข้หวัดใหญ่';
+      if (p === 'blood' || p === 'blood_only' || p === 'donate' || p === 'บริจาคโลหิต') return 'บริจาคโลหิต';
+      if (p === 'all') return 'ALL';
+      return null;
+    }
+
+    // อัปเดตธีมหน้าจอ สี และข้อความให้แตกต่างกัน 100%
+    function updateActiveServiceUI(service) {
+      if (!SERVICE_CONFIGS[service]) service = "ตรวจสุขภาพประจำปี";
+      currentService = service;
+      var cfg = SERVICE_CONFIGS[service];
+
+      // 1. ปรับ Class ของ Body สำหรับธีมสี
+      var body = document.getElementById('mainBody');
+      if (body) {
+        body.className = cfg.bodyBg + " text-slate-800 min-h-screen " + cfg.themeClass;
+      }
+
+      // 2. ปรับ Header Bar ด้านบนสุด
+      var header = document.getElementById('topHeader');
+      if (header) {
+        header.style.borderColor = cfg.headerBorderColor;
+      }
+      var logo = document.getElementById('serviceLogo');
+      if (logo) {
+        logo.className = "w-11 h-11 rounded-xl " + cfg.logoBg + " flex items-center justify-center text-white font-bold text-2xl shadow-md transition-all";
+        logo.textContent = cfg.logo;
+      }
+      var headerTitle = document.getElementById('headerTitle');
+      if (headerTitle) headerTitle.textContent = cfg.title;
+
+      var headerModeTag = document.getElementById('headerModeTag');
+      if (headerModeTag) {
+        headerModeTag.textContent = cfg.tag;
+        if (service === 'ฉีดวัคซีนไข้หวัดใหญ่') {
+          headerModeTag.className = "hidden md:inline-block px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+        } else if (service === 'บริจาคโลหิต') {
+          headerModeTag.className = "hidden md:inline-block px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300";
+        } else {
+          headerModeTag.className = "hidden md:inline-block px-2.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300";
+        }
+      }
+
+      // 3. ปรับ Banner แจ้งเตือนโครงการ
+      var badge = document.getElementById('activeServiceBadge');
+      var dot = document.getElementById('activeServiceDot');
+      var banner = document.getElementById('serviceBanner');
+      if (badge) {
+        badge.innerHTML = '<span>' + cfg.logo + '</span> ' + cfg.shortName;
+        badge.className = "font-bold bg-white px-3 py-1 rounded-xl shadow-sm text-xs md:text-sm flex items-center gap-1.5 border " + cfg.badgeColor;
+      }
+      if (dot) {
+        if (service === 'ฉีดวัคซีนไข้หวัดใหญ่') dot.className = "inline-block w-3 h-3 rounded-full bg-emerald-600 animate-pulse";
+        else if (service === 'บริจาคโลหิต') dot.className = "inline-block w-3 h-3 rounded-full bg-rose-600 animate-pulse";
+        else dot.className = "inline-block w-3 h-3 rounded-full bg-blue-600 animate-pulse";
+      }
+      if (banner) {
+        if (service === 'ฉีดวัคซีนไข้หวัดใหญ่') banner.className = "bg-emerald-50/90 border border-emerald-200 rounded-2xl p-3.5 flex flex-wrap justify-between items-center gap-3 text-xs shadow-sm transition-all duration-300";
+        else if (service === 'บริจาคโลหิต') banner.className = "bg-rose-50/90 border border-rose-200 rounded-2xl p-3.5 flex flex-wrap justify-between items-center gap-3 text-xs shadow-sm transition-all duration-300";
+        else banner.className = "bg-blue-50/90 border border-blue-200 rounded-2xl p-3.5 flex flex-wrap justify-between items-center gap-3 text-xs shadow-sm transition-all duration-300";
+      }
+
+      var dedicatedNoticeBadge = document.getElementById('dedicatedNoticeBadge');
+      if (dedicatedNoticeBadge) {
+        dedicatedNoticeBadge.classList.toggle('hidden', !isDirectService);
+      }
+
+      var switchWrongFormText = document.getElementById('switchWrongFormText');
+      if (switchWrongFormText) switchWrongFormText.textContent = cfg.switchWrongText;
+
+      // 4. ปรับ Hero Activity Card เด่นสะดุดตา
+      var heroCard = document.getElementById('activityHeroCard');
+      if (heroCard) {
+        heroCard.className = "mb-5 rounded-3xl p-5 md:p-6 text-white shadow-lg bg-gradient-to-r " + cfg.heroGradient + " transition-all duration-500 relative overflow-hidden";
+      }
+      var heroIcon = document.getElementById('heroActivityIcon');
+      if (heroIcon) heroIcon.textContent = cfg.logo;
+      var heroTag = document.getElementById('heroActivityTag');
+      if (heroTag) heroTag.textContent = "โครงการ" + cfg.shortName;
+      var heroHeadline = document.getElementById('heroHeadline');
+      if (heroHeadline) heroHeadline.textContent = "แบบประเมิน: " + cfg.shortName;
+      var heroNotice = document.getElementById('heroNoticeMessage');
+      if (heroNotice) heroNotice.innerHTML = cfg.heroNotice;
+
+      // 5. ปรับเส้นขอบ Card ฟอร์ม
+      var formCard = document.getElementById('formCardContainer');
+      if (formCard) {
+        formCard.className = "bg-white rounded-3xl shadow-sm border-2 " + cfg.formBorderColor + " p-5 md:p-8 space-y-6 transition-all duration-300";
+      }
+
+      // 6. ปรับข้อความและปุ่ม Submit
+      var submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
+        submitBtn.className = "w-full py-4 " + cfg.btnSubmitClass + " text-white font-extrabold text-base rounded-2xl shadow-lg transition-all transform active:scale-[0.99]";
+        submitBtn.textContent = (currentAttendance === 'attended') ? ("บันทึกผลประเมิน (" + cfg.shortName + ")") : "บันทึกข้อมูล (ไม่ได้เข้ารับบริการ)";
+      }
+
+      var attAttendedText = document.getElementById('attAttendedText');
+      if (attAttendedText) attAttendedText.textContent = cfg.attText;
+      var attNotAttendedText = document.getElementById('attNotAttendedText');
+      if (attNotAttendedText) attNotAttendedText.textContent = cfg.notAttText;
+      var notAttendedHeader = document.getElementById('notAttendedHeader');
+      if (notAttendedHeader) notAttendedHeader.textContent = cfg.notAttHeader;
+
+      renderQuestions();
+    }
+
+    // ข้อมูลเริ่มต้นจำลองในเครื่อง (ครบทั้ง 3 กิจกรรม)
+    var DEMO_SUBMISSIONS = [
+      { timestamp: "28/10/2026 08:30", location: "LPN1", employeeType: "รายวัน", gender: "หญิง", department: "OP1", ageGroup: "30 - 39 ปี", serviceType: "ตรวจสุขภาพประจำปี", attended: true, scores: [5, 4, 5, 5, 5], feedback: "เจ้าหน้าที่และพยาบาลบริการดี ยิ้มแย้ม รวดเร็วมากค่ะ", absenceReason: "" },
+      { timestamp: "28/10/2026 08:45", location: "LPN1", employeeType: "รายเดือน", gender: "หญิง", department: "HRD", ageGroup: "30 - 39 ปี", serviceType: "ตรวจสุขภาพประจำปี", attended: true, scores: [5, 5, 4, 5, 5], feedback: "การจัดคิวรันโฟลว์ได้ดีกว่าปีที่แล้วมาก", absenceReason: "" },
+      { timestamp: "28/10/2026 09:00", location: "LPN2", employeeType: "รายวัน", gender: "ชาย", department: "LOG", ageGroup: "40 - 49 ปี", serviceType: "ตรวจสุขภาพประจำปี", attended: true, scores: [4, 4, 3, 4, 4], feedback: "จุดเจาะเลือดรอคิวนานนิดหน่อยช่วงเช้า", absenceReason: "" },
+      { timestamp: "28/10/2026 09:15", location: "LPN1", employeeType: "รายวัน", gender: "ชาย", department: "OP2S", ageGroup: "ต่ำกว่า 30 ปี", serviceType: "ตรวจสุขภาพประจำปี", attended: false, scores: null, feedback: "", absenceReason: "ติดงานด่วนหน้างาน - ติดส่งงานลูกค้าด่วนช่วงเช้า" },
+      { timestamp: "28/10/2026 09:30", location: "LPN2", employeeType: "รายเดือน", gender: "ชาย", department: "IT", ageGroup: "30 - 39 ปี", serviceType: "ตรวจสุขภาพประจำปี", attended: true, scores: [5, 5, 5, 5, 5], feedback: "แพทย์ให้คำแนะนำเรื่องผลตรวจเบื้องต้นได้ชัดเจนมากครับ", absenceReason: "" },
+      { timestamp: "28/10/2026 09:40", location: "LPN1", employeeType: "รายวัน", gender: "หญิง", department: "FAC", ageGroup: "50 ปีขึ้นไป", serviceType: "ตรวจสุขภาพประจำปี", attended: false, scores: null, feedback: "", absenceReason: "ลางาน / ติดภารกิจส่วนตัว - ลาพักร้อน" },
+
+      { timestamp: "28/10/2026 10:00", location: "LPN1", employeeType: "รายเดือน", gender: "หญิง", department: "FIN", ageGroup: "30 - 39 ปี", serviceType: "ฉีดวัคซีนไข้หวัดใหญ่", attended: true, scores: [5, 5, 5, 5, 5], feedback: "พยาบาลมือเบามาก ไม่เจ็บเลย ประทับใจค่ะ", absenceReason: "" },
+      { timestamp: "28/10/2026 10:15", location: "LPN2", employeeType: "รายวัน", gender: "ชาย", department: "PUR", ageGroup: "40 - 49 ปี", serviceType: "ฉีดวัคซีนไข้หวัดใหญ่", attended: true, scores: [4, 5, 5, 4, 5], feedback: "สะดวก รวดเร็ว มีการแนะนำอาการข้างเคียงชัดเจน", absenceReason: "" },
+      { timestamp: "28/10/2026 10:30", location: "LPN2", employeeType: "รายวัน", gender: "หญิง", department: "QM", ageGroup: "30 - 39 ปี", serviceType: "ฉีดวัคซีนไข้หวัดใหญ่", attended: false, scores: null, feedback: "", absenceReason: "สภาพร่างกายไม่พร้อม (เช่น มีไข้, ป่วย) - เป็นหวัด มีไข้ 38 องศา" },
+
+      { timestamp: "29/10/2026 09:30", location: "LPN1", employeeType: "รายเดือน", gender: "ชาย", department: "HRD", ageGroup: "30 - 39 ปี", serviceType: "บริจาคโลหิต", attended: true, scores: [3, 3, 3, 3, 3, 3, 3], feedback: "เจ้าหน้าที่และพยาบาลสภากาชาดดูแลดีมาก มีจุดพักและโอวัลตินพร้อม", absenceReason: "" },
+      { timestamp: "29/10/2026 10:00", location: "LPN1", employeeType: "รายวัน", gender: "หญิง", department: "OP1", ageGroup: "ต่ำกว่า 30 ปี", serviceType: "บริจาคโลหิต", attended: true, scores: [3, 2, 3, 3, 2, 3, 3], feedback: "อยากให้เพิ่มระยะเวลาช่วงบ่ายด้วยค่ะ", absenceReason: "" },
+      { timestamp: "29/10/2026 10:30", location: "LPN2", employeeType: "รายวัน", gender: "หญิง", department: "FAC", ageGroup: "30 - 39 ปี", serviceType: "บริจาคโลหิต", attended: false, scores: null, feedback: "", absenceReason: "ความเข้มข้นของเลือดไม่ผ่านเกณฑ์ (ฮีโมโกลบินต่ำ / เลือดลอย)" },
+      { timestamp: "29/10/2026 11:00", location: "LPN2", employeeType: "รายเดือน", gender: "ชาย", department: "IT", ageGroup: "40 - 49 ปี", serviceType: "บริจาคโลหิต", attended: true, scores: [3, 3, 3, 3, 3, 3, 3], feedback: "ของที่ระลึกสวยงาม ระบบลงทะเบียนล่วงหน้าสะดวกดีมากครับ", absenceReason: "" }
+    ];
+
+    // ฟังก์ชันเปิดโหมดรายงานสำหรับ รพ. / คู่ค้าภายนอก (Read-Only & ล็อกปี & ล็อกกิจกรรม)
+    function applyGuestReportMode(service, years) {
+      isGuestReport = true;
+      guestReportService = service || 'ALL';
+      lockedYearsList = Array.isArray(years) ? years.map(function(y) {
+        var str = y.toString().trim();
+        if (parseInt(str, 10) > 2400) str = (parseInt(str, 10) - 543).toString();
+        return str;
+      }).filter(Boolean) : [];
+
+      // ซ่อนปุ่มที่ไม่เกี่ยวข้องใน Header
+      var navSurveyBtn = document.getElementById('navSurveyBtn');
+      var adminAuthBtn = document.getElementById('adminAuthBtn');
+      var navQrModalBtn = document.getElementById('navQrModalBtn');
+      var guestBadge = document.getElementById('guestReportBadge');
+      var guestBadgeText = document.getElementById('guestReportBadgeText');
+
+      if (navSurveyBtn) navSurveyBtn.classList.add('hidden');
+      if (adminAuthBtn) adminAuthBtn.classList.add('hidden');
+      if (navQrModalBtn) navQrModalBtn.classList.add('hidden');
+      if (guestBadge) guestBadge.classList.remove('hidden');
+      if (guestBadgeText) {
+        var sTitle = (guestReportService === 'ALL') ? 'ทุกโครงการ' : guestReportService;
+        guestBadgeText.textContent = "รายงานสำหรับคู่ค้า/รพ. (" + sTitle + ")";
+      }
+
+      // ซ่อนปุ่มเปิด Google Sheet ดิบ เพื่อความปลอดภัย
+      var openSheetLink = document.getElementById('openSheetLink');
+      if (openSheetLink) openSheetLink.classList.add('hidden');
+      var copyCurrentReportLinkBtn = document.getElementById('copyCurrentReportLinkBtn');
+      if (copyCurrentReportLinkBtn) copyCurrentReportLinkBtn.classList.add('hidden');
+
+      // ซ่อน Service Banner ของแบบประเมิน
+      var serviceBanner = document.getElementById('serviceBanner');
+      if (serviceBanner && serviceBanner.parentElement) {
+        serviceBanner.parentElement.classList.add('hidden');
+      }
+
+      // แสดง Guest Report Banner ด้านบนแดชบอร์ด
+      var banner = document.getElementById('guestReportBanner');
+      var svcBadge = document.getElementById('guestReportServiceBadge');
+      var yrBadge = document.getElementById('guestReportYearLockBadge');
+
+      if (banner) banner.classList.remove('hidden');
+      if (svcBadge) {
+        if (guestReportService === 'ALL') {
+          svcBadge.textContent = "📊 สรุปผลภาพรวมทุกโครงการ";
+        } else {
+          var cfg = SERVICE_CONFIGS[guestReportService];
+          svcBadge.textContent = (cfg ? cfg.logo + " " : "") + (cfg ? cfg.shortName : guestReportService);
+        }
+      }
+
+      if (yrBadge) {
+        if (lockedYearsList.length > 0) {
+          yrBadge.classList.remove('hidden');
+          var yrDisplay = lockedYearsList.map(function(y) {
+            return "พ.ศ. " + (parseInt(y, 10) + 543) + " (" + y + ")";
+          }).join(', ');
+          yrBadge.textContent = "🔒 ล็อกเฉพาะปี: " + yrDisplay;
+        } else {
+          yrBadge.classList.add('hidden');
+        }
+      }
+
+      // ปรับแต่งแท็บแดชบอร์ด
+      var tabHealth = document.getElementById('dashTabHealth');
+      var tabVaccine = document.getElementById('dashTabVaccine');
+      var tabBlood = document.getElementById('dashTabBlood');
+
+      if (guestReportService !== 'ALL') {
+        currentDashboardService = guestReportService;
+        if (tabHealth) tabHealth.classList.toggle('hidden', guestReportService !== 'ตรวจสุขภาพประจำปี');
+        if (tabVaccine) tabVaccine.classList.toggle('hidden', guestReportService !== 'ฉีดวัคซีนไข้หวัดใหญ่');
+        if (tabBlood) tabBlood.classList.toggle('hidden', guestReportService !== 'บริจาคโลหิต');
+      }
+
+      // ตัดข้อมูลโครงการอื่นและปีอื่นออกจากหน่วยความจำทันที
+      if (Array.isArray(localSubmissions) && localSubmissions.length > 0) {
+        localSubmissions = filterSubmissionsForGuestReport(localSubmissions);
+      }
+
+      // สลับหน้าจอมาที่แดชบอร์ดทันทีโดยไม่ต้องใส่รหัสผ่าน
+      switchTab('dashboard');
+    }
+
+    // กรองตัดข้อมูลโครงการอื่นและปีอื่นออกจากหน่วยความจำเบราว์เซอร์อย่างเด็ดขาด
+    function filterSubmissionsForGuestReport(data) {
+      if (!isGuestReport || !Array.isArray(data)) return data;
+      var res = data;
+      if (guestReportService && guestReportService !== 'ALL') {
+        res = res.filter(function(s) {
+          return s.serviceType === guestReportService;
+        });
+      }
+      if (lockedYearsList && lockedYearsList.length > 0) {
+        res = res.filter(function(s) {
+          var p = s.timestamp ? parseTimestampParts(s.timestamp) : null;
+          return p && lockedYearsList.indexOf(p.year) !== -1;
+        });
+      }
+      return res;
+    }
+
+    // โหลดและวิเคราะห์ URL เพื่อเลือกโครงการที่เปิด
+    function initData() {
+      // 1. ตรวจสอบ query string จาก URL (กรณีเปิดตรงหรือทดสอบในเบราว์เซอร์)
+      var targetService = null;
+      var reportParam = null;
+      var yearParam = null;
+
+      try {
+        var urlParams = new URLSearchParams(window.location.search);
+        var queryParam = urlParams.get('service') || urlParams.get('mode');
+        targetService = parseServiceParam(queryParam);
+        if (targetService) {
+          isDirectService = true;
+        }
+
+        reportParam = urlParams.get('report') || urlParams.get('dash') || urlParams.get('dashboard');
+        if (!reportParam && urlParams.get('view') === 'dashboard') {
+          reportParam = urlParams.get('service') || 'all';
+        }
+        yearParam = urlParams.get('year') || urlParams.get('years');
+      } catch(e) {}
+
+      // 2. ตรวจสอบจาก template ที่เซิร์ฟเวอร์ Apps Script ส่งมา (สำคัญที่สุดสำหรับการรันบน Apps Script)
+      if (!targetService && typeof SERVER_ACTIVE_SERVICE !== 'undefined' && SERVER_ACTIVE_SERVICE && SERVICE_CONFIGS[SERVER_ACTIVE_SERVICE]) {
+        targetService = SERVER_ACTIVE_SERVICE;
+        if (typeof SERVER_IS_DEDICATED !== 'undefined' && (SERVER_IS_DEDICATED === 'true' || SERVER_IS_DEDICATED === true)) {
+          isDirectService = true;
+        }
+      }
+
+      if (!reportParam && typeof SERVER_REPORT_SERVICE !== 'undefined' && SERVER_REPORT_SERVICE) {
+        reportParam = SERVER_REPORT_SERVICE;
+      }
+      if (!yearParam && typeof SERVER_REPORT_YEAR !== 'undefined' && SERVER_REPORT_YEAR) {
+        yearParam = SERVER_REPORT_YEAR;
+      }
+
+      // 3. ถ้าไม่มี ให้ดูจาก localStorage
+      if (!targetService) {
+        var savedService = localStorage.getItem('active_service_selected');
+        if (savedService && SERVICE_CONFIGS[savedService]) {
+          targetService = savedService;
+        }
+      }
+
+      // 4. ค่าเริ่มต้น
+      if (!targetService) {
+        targetService = "ตรวจสุขภาพประจำปี";
+      }
+
+      updateActiveServiceUI(targetService);
+
+      // ถ้าเป็นโหมดรายงานสำหรับ รพ. / คู่ค้า ให้เปิดใช้งานทันที
+      if (reportParam) {
+        var repService = parseServiceParam(reportParam) || (reportParam.toLowerCase() === 'all' ? 'ALL' : 'ตรวจสุขภาพประจำปี');
+        var yList = [];
+        if (yearParam) {
+          yList = yearParam.toString().split(',').map(function(y) { return y.trim(); }).filter(Boolean);
+        }
+        applyGuestReportMode(repService, yList);
+      }
+
+      // 5. ตรวจสอบ URL จากหน้าต่างหลัก (Parent Window) ของ Google Apps Script เผื่อ iframe อ่าน search ไม่ได้
+      if (typeof google !== 'undefined' && google.script && google.script.url && google.script.url.getLocation) {
+        google.script.url.getLocation(function(loc) {
+          if (loc && loc.url && loc.url.indexOf('script.google.com') !== -1) {
+            saveDetectedBaseUrl(loc.url);
+          }
+          if (loc && loc.parameter) {
+            var p = loc.parameter.service || loc.parameter.mode;
+            var matched = parseServiceParam(p);
+            if (matched && matched !== currentService) {
+              isDirectService = true;
+              updateActiveServiceUI(matched);
+            }
+
+            var repP = loc.parameter.report || loc.parameter.dash || loc.parameter.dashboard;
+            if (!repP && loc.parameter.view === 'dashboard') {
+              repP = loc.parameter.service || 'all';
+            }
+            var yrP = loc.parameter.year || loc.parameter.years;
+            if (repP && !isGuestReport) {
+              var repSvc = parseServiceParam(repP) || (repP.toLowerCase() === 'all' ? 'ALL' : 'ตรวจสุขภาพประจำปี');
+              var yList2 = [];
+              if (yrP) {
+                yList2 = yrP.toString().split(',').map(function(y) { return y.trim(); }).filter(Boolean);
+              }
+              applyGuestReportMode(repSvc, yList2);
+              updateDashboard();
+            }
+          }
+        });
+      }
+
+      // ดึง Web App URL จาก PropertiesService หากยังไม่มี
+      if (!REAL_WEB_APP_URL && typeof google !== 'undefined' && google.script && google.script.run && google.script.run.getWebAppUrl) {
+        google.script.run.withSuccessHandler(function(res) {
+          if (res && res.url && res.url.indexOf('script.google.com') !== -1) {
+            saveDetectedBaseUrl(res.url);
+          }
+        }).getWebAppUrl();
+      }
+
+      // 6. โหลดข้อมูลแดชบอร์ด
+      fetchDashboardDataFromSheet(false);
+      updateMonthFilterVisibility();
+    }
+
+    // ฟังก์ชันดึงข้อมูลจาก Google Sheet
+    function fetchDashboardDataFromSheet(isManual) {
+      if (isFetchingData) return;
+      isFetchingData = true;
+
+      var refreshBtn = document.getElementById('refreshDashBtn');
+      var refreshIcon = document.getElementById('refreshIcon');
+      var refreshText = document.getElementById('refreshText');
+      var statusText = document.getElementById('dataStatusText');
+      var statusDot = document.getElementById('statusDot');
+
+      if (refreshBtn) {
+        refreshBtn.disabled = true;
+        if (refreshText) refreshText.textContent = "กำลังโหลด...";
+        if (refreshIcon) refreshIcon.classList.add('animate-spin');
+      }
+
+      if (statusText) statusText.textContent = "กำลังโหลดข้อมูลจาก Google Sheet...";
+      if (statusDot) statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+
+      callBackendApi('getDashboardData', null, function(response) {
+        isFetchingData = false;
+        resetRefreshButton();
+
+        if (response && response.status === 'success' && Array.isArray(response.data)) {
+          localSubmissions = filterSubmissionsForGuestReport(response.data);
+          updateBannerStatus(true, localSubmissions.length);
+          updateDashboard();
+        } else {
+          var errMsg = response ? response.message : 'ไม่สามารถดึงข้อมูลได้';
+          if (statusText) statusText.textContent = 'แจ้งเตือน: ' + errMsg;
+          if (statusDot) statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-rose-500";
+        }
+      }, function(err) {
+        isFetchingData = false;
+        resetRefreshButton();
+        console.warn("fetchDashboardDataFromSheet error:", err);
+        var saved = localStorage.getItem('survey_eval_data_v3');
+        if (saved) {
+          try { localSubmissions = filterSubmissionsForGuestReport(JSON.parse(saved)); } catch(e) { localSubmissions = filterSubmissionsForGuestReport(DEMO_SUBMISSIONS.slice()); }
+        } else {
+          localSubmissions = filterSubmissionsForGuestReport(DEMO_SUBMISSIONS.slice());
+        }
+        updateBannerStatus(false, localSubmissions.length);
+        updateDashboard();
+        if (statusText) statusText.textContent = 'โหมดออฟไลน์ / บันทึกในเครื่อง (' + (err && err.message ? err.message : 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้') + ')';
+        if (statusDot) statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-amber-500";
+      });
+    }
+
+    function resetRefreshButton() {
+      var refreshBtn = document.getElementById('refreshDashBtn');
+      var refreshIcon = document.getElementById('refreshIcon');
+      var refreshText = document.getElementById('refreshText');
+      if (refreshBtn) {
+        refreshBtn.disabled = false;
+        if (refreshText) refreshText.textContent = "รีเฟรชข้อมูล";
+        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+      }
+    }
+
+    function updateBannerStatus(isOnline, count) {
+      var statusText = document.getElementById('dataStatusText');
+      var statusDot = document.getElementById('statusDot');
+      var lastUpdatedTime = document.getElementById('lastUpdatedTime');
+
+      if (isGuestReport) {
+        var sName = (guestReportService === 'ALL') ? 'ทุกโครงการ' : guestReportService;
+        var yInfo = (lockedYearsList.length > 0) ? (' • เฉพาะปี ' + lockedYearsList.map(function(y) { return y + ' (พ.ศ. ' + (parseInt(y, 10) + 543) + ')'; }).join(', ')) : '';
+        if (isOnline) {
+          if (statusText) statusText.textContent = "ดึงข้อมูลจาก Google Sheet สำเร็จ (พบ " + count + " รายการ ของ" + sName + yInfo + ")";
+          if (statusDot) statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-emerald-500";
+        } else {
+          if (statusText) statusText.textContent = "ข้อมูลผลประเมิน (พบ " + count + " รายการ ของ" + sName + yInfo + ")";
+          if (statusDot) statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-blue-500";
+        }
+      } else {
+        if (isOnline) {
+          if (statusText) statusText.textContent = "ดึงข้อมูลจาก Google Sheet สำเร็จ (พบ " + count + " รายการ จาก 3 ชีต)";
+          if (statusDot) statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-emerald-500";
+        } else {
+          if (statusText) statusText.textContent = "โหมดทดสอบในเครื่อง / Local Storage (พบ " + count + " รายการ)";
+          if (statusDot) statusDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-blue-500";
+        }
+      }
+
+      var now = new Date();
+      var timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (lastUpdatedTime) lastUpdatedTime.textContent = "อัปเดตล่าสุด: " + timeStr + " น.";
+    }
+
+    // เรนเดอร์กล่องคำถามและปุ่มคะแนน
+    function renderQuestions() {
+      var cfg = SERVICE_CONFIGS[currentService];
+      var container = document.getElementById('questionsContainer');
+      var evalTitle = document.getElementById('evalSectionTitle');
+      var evalScaleLegend = document.getElementById('evalScaleLegend');
+      
+      if (evalTitle) evalTitle.textContent = cfg.evalTitle;
+      if (evalScaleLegend) evalScaleLegend.textContent = cfg.scaleLegend;
+
+      var numQuestions = cfg.questions.length;
+      scoresData = [];
+      var defaultScore = (cfg.scaleMax === 3) ? 3 : 5;
+
+      var html = '';
+      for (var q = 0; q < numQuestions; q++) {
+        scoresData.push(defaultScore);
+        html += '<div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-white transition">';
+        html += '  <div class="text-xs md:text-sm font-semibold text-slate-800 leading-snug">' + cfg.questions[q] + '</div>';
+        html += '  <div class="flex items-center space-x-1.5 shrink-0 self-end md:self-auto">';
+
+        if (cfg.scaleMax === 3) {
+          // สเกล 3 ระดับ สำหรับบริจาคโลหิต
+          html += '    <button type="button" onclick="selectScore(' + q + ', 1)" id="btn-q' + q + '-1" class="btn-rate-3">1 ควรปรับปรุง</button>';
+          html += '    <button type="button" onclick="selectScore(' + q + ', 2)" id="btn-q' + q + '-2" class="btn-rate-3">2 พอใจ</button>';
+          html += '    <button type="button" onclick="selectScore(' + q + ', 3)" id="btn-q' + q + '-3" class="btn-rate-3 active-3">3 พอใจมาก</button>';
+        } else {
+          // สเกล 5 ระดับ สำหรับตรวจสุขภาพ และ ฉีดวัคซีน
+          for (var s = 1; s <= 5; s++) {
+            var activeClass = (s === 5) ? " active" : "";
+            html += '    <button type="button" onclick="selectScore(' + q + ', ' + s + ')" id="btn-q' + q + '-' + s + '" class="btn-num' + activeClass + '">' + s + '</button>';
+          }
+        }
+
+        html += '  </div>';
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+
+      // อัปเดตรายการเหตุผลที่ไม่เข้ารับบริการ
+      var reasonSelect = document.getElementById('absenceReason');
+      if (reasonSelect) {
+        reasonSelect.innerHTML = '';
+        cfg.reasons.forEach(function(r) {
+          var opt = document.createElement('option');
+          opt.value = r;
+          opt.textContent = r;
+          reasonSelect.appendChild(opt);
+        });
+      }
+    }
+
+    // ฟังก์ชันเลือกคะแนน
+    function selectScore(qIdx, val) {
+      scoresData[qIdx] = Number(val);
+      var cfg = SERVICE_CONFIGS[currentService];
+
+      if (cfg.scaleMax === 3) {
+        for (var i = 1; i <= 3; i++) {
+          var btn = document.getElementById("btn-q" + qIdx + "-" + i);
+          if (btn) {
+            btn.className = "btn-rate-3" + (i === val ? (" active-" + i) : "");
+          }
+        }
+      } else {
+        for (var s = 1; s <= 5; s++) {
+          var b5 = document.getElementById("btn-q" + qIdx + "-" + s);
+          if (b5) {
+            b5.className = (s === val) ? "btn-num active" : "btn-num";
+          }
+        }
+      }
+    }
+
+    // สลับสถานะ เข้ารับบริการ vs ไม่ได้เข้ารับบริการ
+    function toggleAttendance(status) {
+      currentAttendance = status;
+      var cardAttended = document.getElementById('cardAttended');
+      var cardNotAttended = document.getElementById('cardNotAttended');
+      var radioAttended = document.getElementById('att_attended');
+      var radioNotAttended = document.getElementById('att_not_attended');
+      var evalSec = document.getElementById('evaluationSection');
+      var notSec = document.getElementById('notAttendedSection');
+      var submitBtn = document.getElementById('submitBtn');
+      var cfg = SERVICE_CONFIGS[currentService];
+
+      if (status === 'attended') {
+        radioAttended.checked = true;
+        radioNotAttended.checked = false;
+
+        cardAttended.className = "flex items-center p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/70 shadow-sm cursor-pointer transition-all";
+        cardNotAttended.className = "flex items-center p-3.5 rounded-2xl border-2 border-slate-200 bg-white cursor-pointer hover:border-rose-300 transition-all opacity-80 hover:opacity-100";
+
+        evalSec.classList.remove('hidden');
+        evalSec.style.display = 'block';
+        notSec.classList.add('hidden');
+        notSec.style.display = 'none';
+
+        if (submitBtn) {
+          submitBtn.textContent = 'บันทึกผลประเมิน (' + cfg.shortName + ')';
+        }
+      } else {
+        radioAttended.checked = false;
+        radioNotAttended.checked = true;
+
+        cardAttended.className = "flex items-center p-3.5 rounded-2xl border-2 border-slate-200 bg-white cursor-pointer hover:border-emerald-300 transition-all opacity-80 hover:opacity-100";
+        cardNotAttended.className = "flex items-center p-3.5 rounded-2xl border-2 border-rose-500 bg-rose-50/70 shadow-sm cursor-pointer transition-all";
+
+        evalSec.classList.add('hidden');
+        evalSec.style.display = 'none';
+        notSec.classList.remove('hidden');
+        notSec.style.display = 'block';
+
+        if (submitBtn) {
+          submitBtn.textContent = 'บันทึกข้อมูล (ไม่ได้เข้ารับบริการ)';
+        }
+      }
+    }
+
+    // ฟังก์ชันส่งข้อมูล
+    function submitSurveyData() {
+      var deptSelect = document.getElementById('deptSelect');
+      if (!deptSelect.value) {
+        alert('กรุณาเลือกฝ่าย / แผนกที่สังกัดก่อนบันทึกข้อมูลค่ะ');
+        deptSelect.focus();
+        return;
+      }
+
+      var submitBtn = document.getElementById('submitBtn');
+      var cfg = SERVICE_CONFIGS[currentService];
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'กำลังบันทึกข้อมูลลงชีต ' + cfg.shortName + '...';
+
+      var loc = document.querySelector('input[name="location"]:checked') ? document.querySelector('input[name="location"]:checked').value : 'LPN1';
+      var emp = document.querySelector('input[name="employeeType"]:checked') ? document.querySelector('input[name="employeeType"]:checked').value : 'รายวัน';
+      var gen = document.querySelector('input[name="gender"]:checked') ? document.querySelector('input[name="gender"]:checked').value : 'ชาย';
+      var isAttended = (currentAttendance === 'attended');
+
+      var payload = {
+        timestamp: new Date().toLocaleDateString('th-TH') + ' ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+        location: loc,
+        employeeType: emp,
+        gender: gen,
+        department: deptSelect.value,
+        ageGroup: document.getElementById('ageGroup').value,
+        serviceType: currentService,
+        attended: isAttended,
+        scores: isAttended ? scoresData.slice() : null,
+        feedback: isAttended ? document.getElementById('feedback').value : '',
+        absenceReason: !isAttended ? (document.getElementById('absenceReason').value + (document.getElementById('absenceDetail').value ? ' - ' + document.getElementById('absenceDetail').value : '')) : ''
+      };
+
+      callBackendApi('submitEvaluation', payload, function(response) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = isAttended ? ('บันทึกผลประเมิน (' + cfg.shortName + ')') : 'บันทึกข้อมูล (ไม่ได้เข้ารับบริการ)';
+        if (response && response.status === 'success') {
+          onSaveSuccess(payload, isAttended);
+        } else {
+          alert('เกิดข้อผิดพลาดในการบันทึก: ' + (response ? response.message : 'ไม่ทราบสาเหตุ'));
+        }
+      }, function(err) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = isAttended ? ('บันทึกผลประเมิน (' + cfg.shortName + ')') : 'บันทึกข้อมูล (ไม่ได้เข้ารับบริการ)';
+        alert('ส่งข้อมูลไม่สำเร็จ: ' + (err && err.message ? err.message : err));
+      });
+    }
+
+    function showSuccessModal(title, message, isAttended) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalMessage').innerHTML = message;
+      var successBtn = document.getElementById('successModalBtn');
+      var cfg = SERVICE_CONFIGS[currentService];
+      if (successBtn && cfg) {
+        if (currentService === 'ฉีดวัคซีนไข้หวัดใหญ่') {
+          successBtn.className = "w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-200 transition";
+        } else if (currentService === 'บริจาคโลหิต') {
+          successBtn.className = "w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-rose-200 transition";
+        } else {
+          successBtn.className = "w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-200 transition";
+        }
+      }
+      document.getElementById('successModal').classList.remove('hidden');
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('successModal').classList.add('hidden');
+    }
+
+    function onSaveSuccess(payload, isAttended) {
+      localSubmissions.unshift(payload);
+      try {
+        localStorage.setItem('survey_eval_data_v3', JSON.stringify(localSubmissions));
+      } catch(e) {}
+
+      updateBannerStatus(typeof google !== 'undefined' && google.script && google.script.run, localSubmissions.length);
+      updateDashboard();
+
+      var cfg = SERVICE_CONFIGS[currentService];
+      var targetSheetDisplay = (currentService === 'ฉีดวัคซีนไข้หวัดใหญ่') ? 'ผลประเมิน_ฉีดวัคซีน' : (currentService === 'บริจาคโลหิต' ? 'ผลประเมิน_บริจาคโลหิต' : 'ผลประเมิน_ตรวจสุขภาพ');
+
+      if (isAttended) {
+        showSuccessModal(
+          'บันทึกผลประเมินเรียบร้อย',
+          'บันทึกข้อมูลเข้าชีต <strong>"' + targetSheetDisplay + '"</strong> เรียบร้อยแล้วค่ะ<br><span class="text-xs text-slate-400 mt-1 block">ขอบคุณสำหรับความคิดเห็นและการประเมินโครงการ' + cfg.shortName + 'ค่ะ</span>',
+          true
+        );
+      } else {
+        showSuccessModal(
+          'บันทึกข้อมูลเรียบร้อย',
+          'บันทึกการแจ้งเหตุผลเข้าชีต <strong>"' + targetSheetDisplay + '"</strong> เรียบร้อยแล้วค่ะ',
+          false
+        );
+      }
+
+      document.getElementById('deptSelect').selectedIndex = 0;
+      document.getElementById('feedback').value = '';
+      document.getElementById('absenceDetail').value = '';
+      toggleAttendance('attended');
+      renderQuestions();
+    }
+
+    // Chart.js Plugin: วาดคะแนนตัวเลขบนยอดแท่งกราฟให้อ่านง่ายทันทีทั้งบนหน้าจอมือถือ โน๊ตบุ๊ค และ PC
+    var topScoreLabelsPlugin = {
+      id: 'topScoreLabels',
+      afterDatasetsDraw: function(chart) {
+        var ctx = chart.ctx;
+        chart.data.datasets.forEach(function(dataset, datasetIndex) {
+          var meta = chart.getDatasetMeta(datasetIndex);
+          if (!meta.hidden) {
+            meta.data.forEach(function(element, index) {
+              var val = dataset.data[index];
+              if (val !== undefined && val !== null && !isNaN(val) && Number(val) > 0) {
+                var text = Number(val).toFixed(2);
+                ctx.save();
+                var isMobile = (typeof window !== 'undefined' && window.innerWidth < 640);
+                ctx.font = 'bold ' + (isMobile ? '10.5px' : '12px') + ' Sarabun, sans-serif';
+                ctx.fillStyle = '#1e293b';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(text, element.x, Math.max(element.y - 4, 16));
+                ctx.restore();
+              }
+            });
+          }
+        });
+      }
+    };
+
+    // เรนเดอร์รายการเกณฑ์ประเมินแบบ List Items ใต้กราฟแท่ง (เหมือนในภาพตัวอย่างเป๊ะๆ)
+    function renderCriteriaLegendCards(cfg, avgs) {
+      var container = document.getElementById('criteriaLegendGrid');
+      if (!container) return;
+      var html = '';
+      if (cfg && cfg.questions) {
+        cfg.questions.forEach(function(qText, idx) {
+          var sc = (avgs && avgs[idx] !== undefined) ? avgs[idx] : '0.00';
+          var color = CRITERIA_COLORS[idx % CRITERIA_COLORS.length];
+
+          html += '<div class="py-2 sm:py-2.5 px-2 flex items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors">';
+          html += '  <div class="flex items-center gap-2.5 min-w-0">';
+          html += '    <span class="w-3.5 h-3.5 rounded-[4px] shrink-0 shadow-2xs" style="background-color: ' + color + ';"></span>';
+          html += '    <span class="font-medium text-xs text-slate-800 truncate" title="' + qText + '">' + qText + '</span>';
+          html += '  </div>';
+          html += '  <span class="font-bold text-xs text-slate-800 shrink-0 tabular-nums ml-2">' + sc + '</span>';
+          html += '</div>';
+        });
+      }
+      container.innerHTML = html;
+    }
+
+    // ฟังก์ชันอัปเดตสรุปภาพรวมการฉีดวัคซีน/ตรวจสุขภาพ (Donut Chart + ข้อมูลสรุปด้านข้าง สไตล์ภาพตัวอย่าง)
+    function updateOverviewPieChart(filtered, attended, notAttended, overallScore) {
+      var total = filtered.length;
+      var attCount = attended.length;
+      var notAttCount = notAttended.length;
+      var attPct = total > 0 ? ((attCount / total) * 100).toFixed(1) : "0.0";
+      var notAttPct = total > 0 ? ((notAttCount / total) * 100).toFixed(1) : "0.0";
+
+      var isBlood = (currentDashboardService === 'บริจาคโลหิต');
+      var isVaccine = (currentDashboardService === 'ฉีดวัคซีนไข้หวัดใหญ่');
+
+      var titleIcon = document.getElementById('overviewPieIcon');
+      var titleText = document.getElementById('overviewPieText');
+      var totalBadge = document.getElementById('overviewTotalBadge');
+      var rateBadge = document.getElementById('ovAttendanceRate');
+
+      if (titleIcon && titleText) {
+        if (isVaccine) {
+          titleIcon.textContent = '💉';
+          titleText.textContent = 'สรุปภาพรวม: ฉีดวัคซีนไข้หวัดใหญ่';
+        } else if (isBlood) {
+          titleIcon.textContent = '🩸';
+          titleText.textContent = 'สรุปภาพรวม: โครงการบริจาคโลหิต';
+        } else {
+          titleIcon.textContent = '🩺';
+          titleText.textContent = 'สรุปภาพรวม: ตรวจสุขภาพประจำปี';
+        }
+      }
+
+      if (totalBadge) totalBadge.textContent = total + " รายการ";
+      if (rateBadge) rateBadge.textContent = attPct + "%";
+
+      var labelAtt = document.getElementById('ovLabelAttended');
+      var labelNotAtt = document.getElementById('ovLabelNotAttended');
+      var dotAtt = document.getElementById('ovDotAttended');
+      var countAtt = document.getElementById('ovCountAttended');
+      var pctAtt = document.getElementById('ovPctAttended');
+      var countNotAtt = document.getElementById('ovCountNotAttended');
+      var pctNotAtt = document.getElementById('ovPctNotAttended');
+      var avgScoreEl = document.getElementById('ovAvgScore');
+      var avgScoreMaxEl = document.getElementById('ovAvgScoreMax');
+
+      var primaryColor = isVaccine ? '#059669' : (isBlood ? '#e11d48' : '#2563eb');
+      var attText = isBlood ? 'บริจาคสำเร็จ' : 'รับบริการจริง';
+      var notAttText = isBlood ? 'ไม่ได้บริจาค' : 'ไม่ได้เข้ารับบริการ';
+
+      if (labelAtt) labelAtt.textContent = attText;
+      if (labelNotAtt) labelNotAtt.textContent = notAttText;
+      if (dotAtt) dotAtt.style.backgroundColor = primaryColor;
+
+      if (countAtt) countAtt.textContent = attCount + " คน";
+      if (pctAtt) pctAtt.textContent = "(" + attPct + "%)";
+      if (countNotAtt) countNotAtt.textContent = notAttCount + " คน";
+      if (pctNotAtt) pctNotAtt.textContent = "(" + notAttPct + "%)";
+
+      var maxScale = (SERVICE_CONFIGS[currentDashboardService] && SERVICE_CONFIGS[currentDashboardService].scaleMax) || 5;
+      if (avgScoreEl) avgScoreEl.textContent = overallScore || "0.00";
+      if (avgScoreMaxEl) avgScoreMaxEl.textContent = "เต็ม " + maxScale.toFixed(2);
+
+      var labels = [attText, notAttText];
+      var data = [attCount, notAttCount];
+      var bgColors = [primaryColor, '#f43f5e'];
+
+      if (!overviewPieChartInstance) {
+        try {
+          var canvas = document.getElementById('overviewPieChart');
+          if (!canvas) return;
+          var ctx = canvas.getContext('2d');
+          overviewPieChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: labels,
+              datasets: [{
+                data: data,
+                backgroundColor: bgColors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                  titleFont: { family: 'Sarabun', size: 12, weight: '700' },
+                  bodyFont: { family: 'Sarabun', size: 11 },
+                  cornerRadius: 8,
+                  padding: 8,
+                  callbacks: {
+                    label: function(item) {
+                      var v = item.raw || 0;
+                      var p = total > 0 ? ((v / total) * 100).toFixed(1) : 0;
+                      return ' ' + v + ' คน (' + p + '%)';
+                    }
+                  }
+                }
+              },
+              cutout: '60%'
+            }
+          });
+        } catch(e) {}
+      } else {
+        overviewPieChartInstance.data.labels = labels;
+        overviewPieChartInstance.data.datasets[0].data = data;
+        overviewPieChartInstance.data.datasets[0].backgroundColor = bgColors;
+        overviewPieChartInstance.update();
+      }
+    }
+
+
+    // ปรับการแสดงผลตัวกรองเดือน: ซ่อนสำหรับตรวจสุขภาพและฉีดวัคซีน (สรุปรวมรายปีเนื่องจากจัดควบ 2 เดือน) และแสดงเฉพาะบริจาคโลหิต
+    function updateMonthFilterVisibility() {
+      var monthContainer = document.getElementById('filterMonthContainer');
+      var monthSelect = document.getElementById('filterMonth');
+      var yearlyBadge = document.getElementById('yearlySummaryHintBadge');
+      if (!monthContainer) return;
+
+      if (currentDashboardService === 'ตรวจสุขภาพประจำปี' || currentDashboardService === 'ฉีดวัคซีนไข้หวัดใหญ่') {
+        monthContainer.classList.add('hidden');
+        if (monthSelect) monthSelect.value = 'ALL';
+        if (yearlyBadge) {
+          yearlyBadge.classList.remove('hidden');
+        }
+      } else {
+        monthContainer.classList.remove('hidden');
+        if (yearlyBadge) {
+          yearlyBadge.classList.add('hidden');
+        }
+      }
+    }
+
+    // แดชบอร์ด
+    function switchDashboardTab(service) {
+      if (isGuestReport && guestReportService !== 'ALL' && service !== guestReportService) {
+        return;
+      }
+      currentDashboardService = service;
+      var bHealth = document.getElementById('dashTabHealth');
+      var bVaccine = document.getElementById('dashTabVaccine');
+      var bBlood = document.getElementById('dashTabBlood');
+      var title = document.getElementById('chartTitle');
+      var maxLabel = document.getElementById('chartMaxScoreLabel');
+      var cfg = SERVICE_CONFIGS[service];
+
+      bHealth.className = (service === 'ตรวจสุขภาพประจำปี') ? "px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-center bg-white text-blue-600 shadow-sm transition truncate" : "px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-center text-slate-600 transition truncate hover:bg-white/50";
+      bVaccine.className = (service === 'ฉีดวัคซีนไข้หวัดใหญ่') ? "px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-center bg-white text-emerald-600 shadow-sm transition truncate" : "px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-center text-slate-600 transition truncate hover:bg-white/50";
+      bBlood.className = (service === 'บริจาคโลหิต') ? "px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-center bg-white text-rose-600 shadow-sm transition truncate" : "px-2 sm:px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold text-center text-slate-600 transition truncate hover:bg-white/50";
+
+      title.textContent = "คะแนนเฉลี่ยแยกตามเกณฑ์ " + cfg.questions.length + " ข้อ (" + service + ")";
+      maxLabel.textContent = "เต็ม " + cfg.scaleMax.toFixed(2) + " คะแนน";
+
+      updateMonthFilterVisibility();
+      updateDashboard();
+    }
+
+    // ฟังก์ชันแยกปีและเดือนจาก Timestamp (รองรับทั้ง dd/MM/yyyy HH:mm, yyyy-MM-dd, Date Object, ปี พ.ศ./ค.ศ.)
+    function parseTimestampParts(ts) {
+      if (!ts) return null;
+      if (ts instanceof Date) {
+        return {
+          year: ts.getFullYear().toString(),
+          month: (ts.getMonth() + 1).toString().padStart(2, '0')
+        };
+      }
+      var s = String(ts).trim();
+      var m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (m1) {
+        var m = m1[2].padStart(2, '0');
+        var y = m1[3];
+        if (parseInt(y, 10) > 2400) {
+          y = (parseInt(y, 10) - 543).toString();
+        }
+        return { month: m, year: y };
+      }
+      var m2 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m2) {
+        return {
+          year: m2[1],
+          month: m2[2].padStart(2, '0')
+        };
+      }
+      var d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        return {
+          year: d.getFullYear().toString(),
+          month: (d.getMonth() + 1).toString().padStart(2, '0')
+        };
+      }
+      return null;
+    }
+
+    // ซิงค์ตัวเลือกปีใน Dropdown จากข้อมูลจริงที่มี (รองรับการล็อกปีเฉพาะสำหรับ รพ. / คู่ค้า)
+    function syncYearDropdownOptions() {
+      var select = document.getElementById('filterYear');
+      if (!select) return;
+      var curVal = select.value || 'ALL';
+
+      // กรณีมีรายการปีที่ล็อกไว้สำหรับ รพ. / คู่ค้าภายนอก
+      if (isGuestReport && lockedYearsList.length > 0) {
+        var optsHtml = '';
+        if (lockedYearsList.length > 1) {
+          optsHtml += '<option value="ALL">ปีที่ได้รับอนุญาตทั้งหมด (' + lockedYearsList.length + ' ปี)</option>';
+        }
+        lockedYearsList.forEach(function(yr) {
+          optsHtml += '<option value="' + yr + '">ปี ' + yr + ' (พ.ศ. ' + (parseInt(yr, 10) + 543) + ')</option>';
+        });
+        select.innerHTML = optsHtml;
+
+        if (lockedYearsList.length === 1) {
+          select.value = lockedYearsList[0];
+          select.disabled = true;
+          select.classList.add('opacity-80', 'cursor-not-allowed');
+        } else {
+          select.disabled = false;
+          select.classList.remove('opacity-80', 'cursor-not-allowed');
+          select.value = (lockedYearsList.indexOf(curVal) !== -1 || curVal === 'ALL') ? curVal : 'ALL';
+        }
+        return;
+      }
+
+      // โหมดทั่วไป (Admin HANA หรือไม่ได้ล็อกปี)
+      select.disabled = false;
+      select.classList.remove('opacity-80', 'cursor-not-allowed');
+      var yearsSet = {};
+      localSubmissions.forEach(function(s) {
+        if (s.timestamp) {
+          var p = parseTimestampParts(s.timestamp);
+          if (p && p.year) yearsSet[p.year] = true;
+        }
+      });
+      var curYear = new Date().getFullYear().toString();
+      yearsSet[curYear] = true;
+      var years = Object.keys(yearsSet).sort().reverse();
+
+      var currentOptions = [];
+      for (var i = 1; i < select.options.length; i++) {
+        currentOptions.push(select.options[i].value);
+      }
+      if (currentOptions.join(',') !== years.join(',')) {
+        select.innerHTML = '<option value="ALL">ทุกปี</option>';
+        years.forEach(function(yr) {
+          var opt = document.createElement('option');
+          opt.value = yr;
+          opt.textContent = "ปี " + yr + " (พ.ศ. " + (parseInt(yr, 10) + 543) + ")";
+          select.appendChild(opt);
+        });
+        select.value = (years.indexOf(curVal) !== -1 || curVal === 'ALL') ? curVal : 'ALL';
+      }
+    }
+
+    function updateDashboard() {
+      syncYearDropdownOptions();
+      var locFilter = document.getElementById('filterLocation').value;
+      var empFilter = document.getElementById('filterEmpType').value;
+      var yearFilter = document.getElementById('filterYear') ? document.getElementById('filterYear').value : 'ALL';
+      var monthSelect = document.getElementById('filterMonth');
+      // โครงการตรวจสุขภาพประจำปี และ ฉีดวัคซีนไข้หวัดใหญ่: สรุปผลรวมแบบรายปี (ไม่กรองรายเดือน เนื่องจากอาจจัดควบ 2 เดือน)
+      // โครงการบริจาคโลหิต: ประเมินทุกๆ 3 เดือนครั้ง และประเมิน ณ วันบริจาค สามารถกรองรายเดือนได้ตามปกติ
+      var monthFilter = 'ALL';
+      if (currentDashboardService === 'บริจาคโลหิต' && monthSelect) {
+        monthFilter = monthSelect.value || 'ALL';
+      }
+      var cfg = SERVICE_CONFIGS[currentDashboardService];
+
+      var allFiltered = localSubmissions.filter(function(s) {
+        var matchLoc = (locFilter === 'ALL') || (s.location === locFilter);
+        var matchEmp = (empFilter === 'ALL') || (s.employeeType === empFilter);
+        var matchYear = true;
+        var matchMonth = true;
+        var p = s.timestamp ? parseTimestampParts(s.timestamp) : null;
+
+        // นโยบายความปลอดภัย: หากอยู่ในโหมดล็อกปีสำหรับ รพ. ต้องคัดกรองเฉพาะปีที่อนุญาตเท่านั้น
+        if (isGuestReport && lockedYearsList.length > 0) {
+          if (!p || lockedYearsList.indexOf(p.year) === -1) {
+            return false;
+          }
+        }
+
+        if (p) {
+          if (yearFilter !== 'ALL' && p.year !== yearFilter) matchYear = false;
+          if (monthFilter !== 'ALL' && p.month !== monthFilter) matchMonth = false;
+        }
+        return matchLoc && matchEmp && matchYear && matchMonth;
+      });
+
+      var filtered = allFiltered.filter(function(s) {
+        return s.serviceType === currentDashboardService;
+      });
+
+      var attended = filtered.filter(function(s) { return s.attended; });
+      var notAttended = filtered.filter(function(s) { return !s.attended; });
+
+      document.getElementById('kpiTotal').textContent = filtered.length;
+      document.getElementById('kpiAttended').textContent = attended.length;
+      document.getElementById('kpiNotAttended').textContent = notAttended.length;
+
+      var numQ = cfg.questions.length;
+      var avgs = new Array(numQ).fill(0);
+      var scoredCount = 0;
+
+      if (attended.length > 0) {
+        var sums = new Array(numQ).fill(0);
+        var counts = new Array(numQ).fill(0);
+        var totalSum = 0;
+        var totalScoresCount = 0;
+
+        attended.forEach(function(item) {
+          if (item.scores && item.scores.length > 0) {
+            scoredCount++;
+            for (var i = 0; i < numQ; i++) {
+              if (item.scores[i] !== undefined && !isNaN(Number(item.scores[i]))) {
+                var sc = Number(item.scores[i]);
+                sums[i] += sc;
+                counts[i]++;
+                totalSum += sc;
+                totalScoresCount++;
+              }
+            }
+          }
+        });
+
+        if (scoredCount > 0) {
+          for (var q = 0; q < numQ; q++) {
+            avgs[q] = counts[q] > 0 ? (sums[q] / counts[q]).toFixed(2) : "0.00";
+          }
+          var overall = totalScoresCount > 0 ? (totalSum / totalScoresCount).toFixed(2) : "0.00";
+          document.getElementById('kpiAvgScore').textContent = overall;
+        } else {
+          document.getElementById('kpiAvgScore').textContent = "0.00";
+        }
+      } else {
+        document.getElementById('kpiAvgScore').textContent = "0.00";
+      }
+
+      // ปรับปรุงกราฟแท่งหลากสีตามภาพตัวอย่าง
+      if (chartInstance) {
+        chartInstance.data.labels = cfg.questions.map(function(q, i) { return 'ข้อ ' + (i + 1); });
+        chartInstance.data.datasets[0].data = avgs;
+        chartInstance.data.datasets[0].backgroundColor = CRITERIA_COLORS;
+        chartInstance.options.scales.y.max = cfg.scaleMax;
+        chartInstance.update();
+      }
+      renderCriteriaLegendCards(cfg, avgs);
+
+      // อัปเดตกราฟสรุปภาพรวมการฉีดวัคซีน/ตรวจสุขภาพ (Donut Chart + ข้อมูลสรุปสไตล์ภาพตัวอย่าง)
+      updateOverviewPieChart(filtered, attended, notAttended, overall);
+
+      // แสดงรายการข้อเสนอแนะและเหตุผลที่ไม่เข้ารับบริการ
+      renderDashboardDetails(attended, notAttended);
+    }
+
+    function renderDashboardDetails(attended, notAttended) {
+      // 1. เหตุผลที่ไม่ได้เข้ารับบริการ
+      var reasonListEl = document.getElementById('absenceReasonList');
+      var notBadge = document.getElementById('notAttendedCountBadge');
+      if (notBadge) notBadge.textContent = notAttended.length + " รายการ";
+
+      if (reasonListEl) {
+        if (notAttended.length === 0) {
+          reasonListEl.innerHTML = '<div class="p-3 bg-slate-50 rounded-lg text-slate-400 text-center italic">ไม่มีรายการแจ้งเหตุผล</div>';
+        } else {
+          var rHtml = '';
+          notAttended.forEach(function(item) {
+            var rText = item.absenceReason || "ไม่ได้ระบุเหตุผล";
+            var genText = item.gender ? (' • ' + item.gender) : '';
+            rHtml += '<div class="p-2.5 rounded-xl border border-rose-100 bg-rose-50/40 hover:bg-rose-50 transition">' +
+              '<div class="flex justify-between items-center mb-1">' +
+                '<span class="font-bold text-rose-800">' + (item.department || '-') + ' (' + (item.employeeType || '-') + ' - ' + (item.location || '-') + genText + ')</span>' +
+                '<span class="text-[10px] text-slate-400">' + (item.timestamp || '') + '</span>' +
+              '</div>' +
+              '<p class="text-slate-700 leading-snug">' + rText + '</p>' +
+            '</div>';
+          });
+          reasonListEl.innerHTML = rHtml;
+        }
+      }
+
+      // 2. ข้อเสนอแนะเพิ่มเติม
+      var feedbackListEl = document.getElementById('feedbackList');
+      var fbBadge = document.getElementById('feedbackCountBadge');
+      var feedbackItems = attended.filter(function(item) { return item.feedback && item.feedback.trim() !== '' && item.feedback !== '-'; });
+      if (fbBadge) fbBadge.textContent = feedbackItems.length + " ข้อความ";
+
+      if (feedbackListEl) {
+        if (feedbackItems.length === 0) {
+          feedbackListEl.innerHTML = '<div class="p-3 bg-slate-50 rounded-lg text-slate-400 text-center italic">ยังไม่มีข้อเสนอแนะ</div>';
+        } else {
+          var fHtml = '';
+          feedbackItems.forEach(function(item) {
+            var genText = item.gender ? (' • ' + item.gender) : '';
+            fHtml += '<div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white transition">' +
+              '<div class="flex justify-between items-center mb-1">' +
+                '<span class="font-bold text-blue-700">' + (item.department || '-') + ' (' + (item.employeeType || '-') + ' - ' + (item.location || '-') + genText + ')</span>' +
+                '<span class="text-[10px] text-slate-400">' + (item.timestamp || '') + '</span>' +
+              '</div>' +
+              '<p class="text-slate-700 leading-snug">' + item.feedback + '</p>' +
+            '</div>';
+          });
+          feedbackListEl.innerHTML = fHtml;
+        }
+      }
+    }
+
+    // ฟังก์ชันจัดการ QR Code Center & URL อย่างปลอดภัย (ป้องกัน White Screen 100%)
+    function saveDetectedBaseUrl(url) {
+      if (!url || typeof url !== 'string' || url.indexOf('script.google.com') === -1) return;
+      var clean = url.split('?')[0].trim();
+      REAL_WEB_APP_URL = clean;
+      try { localStorage.setItem('hana_survey_webapp_url', clean); } catch(e) {}
+      var input = document.getElementById('qrBaseUrlInput');
+      if (input && input.value !== clean) {
+        input.value = clean;
+      }
+      refreshQrCodes();
+      if (typeof google !== 'undefined' && google.script && google.script.run && google.script.run.setWebAppUrl) {
+        google.script.run.setWebAppUrl(clean);
+      }
+    }
+
+    function getCleanBaseUrl() {
+      // 1. ตรวจสอบค่าที่พิมพ์/ตั้งไว้ใน input (ต้องไม่ใช่ googleusercontent)
+      var input = document.getElementById('qrBaseUrlInput');
+      var inputVal = input ? input.value.trim() : '';
+      if (inputVal && inputVal.indexOf('googleusercontent.com') === -1 && inputVal.indexOf('script.google.com') !== -1) {
+        return inputVal.split('?')[0];
+      }
+
+      // 2. ตัวแปร REAL_WEB_APP_URL ที่ตรวจพบจาก top-level หรือ cache
+      if (typeof REAL_WEB_APP_URL !== 'undefined' && REAL_WEB_APP_URL && REAL_WEB_APP_URL.indexOf('script.google.com') !== -1) {
+        return REAL_WEB_APP_URL.split('?')[0];
+      }
+
+      // 3. SERVER_WEB_APP_URL จาก PropertiesService หรือ Apps Script
+      if (typeof SERVER_WEB_APP_URL !== 'undefined' && SERVER_WEB_APP_URL && SERVER_WEB_APP_URL.indexOf('script.google.com') !== -1) {
+        return SERVER_WEB_APP_URL.split('?')[0];
+      }
+
+      // 4. localStorage
+      try {
+        var cached = localStorage.getItem('hana_survey_webapp_url');
+        if (cached && cached.indexOf('script.google.com') !== -1) {
+          return cached.split('?')[0];
+        }
+      } catch(e) {}
+
+      // 5. ถ้าเปิดเป็นไฟล์ local ในคอมพิวเตอร์ (file://) สำหรับทดสอบ
+      if (window.location.protocol === 'file:') {
+        return window.location.href.split('?')[0];
+      }
+
+      // 6. ค่าเริ่มต้น Web App URL ของระบบ
+      if (typeof DEFAULT_WEB_APP_URL !== 'undefined' && DEFAULT_WEB_APP_URL) {
+        return DEFAULT_WEB_APP_URL;
+      }
+
+      // ห้ามเด็ดขาดไม่ให้คืนค่า googleusercontent.com เพื่อป้องกันหน้าขาว
+      return '';
+    }
+
+    function ensureValidBaseUrl(callback) {
+      var frontend = getPublicFrontendUrl();
+      if (frontend && frontend.startsWith('http') && frontend.indexOf('googleusercontent.com') === -1) {
+        callback(frontend);
+        return;
+      }
+      var base = getCleanBaseUrl();
+      if (base && (base.indexOf('script.google.com') !== -1 || base.startsWith('file://'))) {
+        callback(base);
+        return;
+      }
+
+      var userUrl = prompt(
+        "⚠️ ยังไม่พบ URL สำหรับสร้าง QR Code ค่ะ\n\n" +
+        "กรุณาระบุ URL ของหน้าเว็บ (เช่น บน GitHub Pages หรือ Web App URL ของ Apps Script):\n\n" +
+        "วาง URL ลงในช่องด้านล่างนี้ได้เลยค่ะ:"
+      );
+
+      if (userUrl && userUrl.trim().startsWith('http')) {
+        var clean = userUrl.split('?')[0].trim();
+        if (clean.indexOf('script.google.com') !== -1) {
+          saveDetectedBaseUrl(clean);
+        } else {
+          localStorage.setItem('hana_survey_frontend_url', clean);
+        }
+        callback(clean);
+      } else if (userUrl) {
+        alert("⚠️ รูปแบบ URL ไม่ถูกต้องค่ะ ต้องขึ้นต้นด้วย http:// หรือ https:// นะคะ");
+      }
+    }
+
+    function onQrFrontendUrlInputChange() {
+      var input = document.getElementById('qrFrontendUrlInput');
+      var val = input ? input.value.trim() : '';
+      if (val && val.startsWith('http')) {
+        localStorage.setItem('hana_survey_frontend_url', val.split('?')[0]);
+      }
+      refreshQrCodes();
+    }
+
+    function manualSaveFrontendUrl() {
+      var input = document.getElementById('qrFrontendUrlInput');
+      var val = input ? input.value.trim() : '';
+      if (val && val.startsWith('http')) {
+        localStorage.setItem('hana_survey_frontend_url', val.split('?')[0]);
+        refreshQrCodes();
+        alert("💾 บันทึก URL หน้าเว็บเรียบร้อยแล้วค่ะ!\nQR Code ทั้งหมดพร้อมใช้งานทันที:\n" + val.split('?')[0]);
+      } else {
+        alert("⚠️ กรุณาระบุ URL ที่ขึ้นต้นด้วย http:// หรือ https:// ค่ะ");
+      }
+    }
+
+    function onQrBaseUrlInputChange() {
+      var input = document.getElementById('qrBaseUrlInput');
+      var val = input ? input.value.trim() : '';
+      if (val && val.indexOf('script.google.com') !== -1) {
+        saveDetectedBaseUrl(val);
+      } else {
+        refreshQrCodes();
+      }
+    }
+
+    function manualSaveBaseUrl() {
+      var input = document.getElementById('qrBaseUrlInput');
+      var val = input ? input.value.trim() : '';
+      if (val && val.indexOf('script.google.com') !== -1) {
+        saveDetectedBaseUrl(val);
+        alert("💾 บันทึก Web App API URL เรียบร้อยแล้วค่ะ!\nระบบจะส่งข้อมูลไปยัง Google Sheet ตาม URL นี้:\n" + val.split('?')[0]);
+      } else {
+        alert("⚠️ กรุณาระบุ Web App URL ที่ขึ้นต้นด้วย https://script.google.com/macros/s/.../exec ค่ะ");
+      }
+    }
+
+    function autoDetectUrlQuiet() {
+      if (typeof google !== 'undefined' && google.script && google.script.url && google.script.url.getLocation) {
+        google.script.url.getLocation(function(loc) {
+          if (loc && loc.url && loc.url.indexOf('script.google.com') !== -1) {
+            saveDetectedBaseUrl(loc.url);
+          }
+        });
+      }
+    }
+
+    function autoDetectUrl() {
+      // 1. ถ้ามี URL จาก top-level parent window ของ Apps Script
+      if (typeof google !== 'undefined' && google.script && google.script.url && google.script.url.getLocation) {
+        google.script.url.getLocation(function(loc) {
+          if (loc && loc.url && loc.url.indexOf('script.google.com') !== -1) {
+            saveDetectedBaseUrl(loc.url);
+            alert("ตรวจพบ Web App URL อัตโนมัติเรียบร้อยค่ะ:\n" + loc.url.split('?')[0]);
+          } else {
+            fallbackPromptUrl();
+          }
+        });
+        return;
+      }
+
+      // 2. ถ้ามีแคชหรือเซิร์ฟเวอร์ส่งมา
+      var base = getCleanBaseUrl();
+      if (base && base.indexOf('script.google.com') !== -1) {
+        document.getElementById('qrBaseUrlInput').value = base;
+        refreshQrCodes();
+        alert("ใช้งาน Web App URL ปัจจุบันเรียบร้อยค่ะ:\n" + base);
+        return;
+      }
+
+      fallbackPromptUrl();
+    }
+
+    function fallbackPromptUrl() {
+      var userUrl = prompt(
+        "⚠️ ไม่สามารถตรวจหา Web App URL อัตโนมัติได้ค่ะ\n\n" +
+        "กรุณานำ Web App URL จาก Google Apps Script (Deploy > Manage deployments)\n" +
+        "ที่ขึ้นต้นด้วย https://script.google.com/macros/s/.../exec\n\n" +
+        "มาวางในช่องด้านล่างนี้ค่ะ:"
+      );
+      if (userUrl && userUrl.trim().indexOf('script.google.com') !== -1) {
+        saveDetectedBaseUrl(userUrl);
+        alert("บันทึก Web App URL เรียบร้อยแล้วค่ะ!");
+      } else if (userUrl) {
+        alert("รูปแบบ URL ไม่ถูกต้องค่ะ ต้องขึ้นต้นด้วย https://script.google.com/macros/s/.../exec นะคะ");
+      }
+    }
+
+    function refreshQrCodes() {
+      var base = getPublicFrontendUrl();
+      var isInvalidOrSandbox = !base || base.startsWith('file://') || base.indexOf('script.googleusercontent.com') !== -1;
+      
+      var warningEl = document.getElementById('qrWarningBanner');
+      if (warningEl) {
+        warningEl.classList.toggle('hidden', !isInvalidOrSandbox);
+        var snippet = document.getElementById('detectedUrlSnippet');
+        if (snippet) {
+          var displaySnippet = base || '(ยังไม่พบ Web App URL)';
+          snippet.textContent = displaySnippet.length > 55 ? displaySnippet.substring(0, 55) + '...' : displaySnippet;
+        }
+      }
+
+      var effectiveBase = base || "https://script.google.com/macros/s/YOUR_APP_ID/exec";
+      var healthUrl = effectiveBase + (effectiveBase.indexOf('?') === -1 ? '?' : '&') + 'service=health';
+      var vaccineUrl = effectiveBase + (effectiveBase.indexOf('?') === -1 ? '?' : '&') + 'service=vaccine';
+      var bloodUrl = effectiveBase + (effectiveBase.indexOf('?') === -1 ? '?' : '&') + 'service=blood';
+
+      document.getElementById('qrUrlHealthText').textContent = healthUrl;
+      document.getElementById('qrUrlVaccineText').textContent = vaccineUrl;
+      if (document.getElementById('qrUrlBloodText')) document.getElementById('qrUrlBloodText').textContent = bloodUrl;
+
+      var qrHealthSrc = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(healthUrl);
+      var qrVaccineSrc = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(vaccineUrl);
+      var qrBloodSrc = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(bloodUrl);
+
+      document.getElementById('qrImgHealth').src = qrHealthSrc;
+      document.getElementById('qrImgVaccine').src = qrVaccineSrc;
+      if (document.getElementById('qrImgBlood')) document.getElementById('qrImgBlood').src = qrBloodSrc;
+
+      document.getElementById('printQrImgHealth').src = qrHealthSrc;
+      document.getElementById('printQrImgVaccine').src = qrVaccineSrc;
+      if (document.getElementById('printQrImgBlood')) document.getElementById('printQrImgBlood').src = qrBloodSrc;
+
+      updateHospitalShareUrl();
+    }
+
+    function getHospitalShareUrl() {
+      var base = getPublicFrontendUrl() || "https://script.google.com/macros/s/YOUR_APP_ID/exec";
+      var svc = document.getElementById('shareHospitalService') ? document.getElementById('shareHospitalService').value : 'health';
+      var yr = document.getElementById('shareHospitalYear') ? document.getElementById('shareHospitalYear').value : '2026';
+      var sep = base.indexOf('?') === -1 ? '?' : '&';
+      var parts = ['report=' + svc];
+      if (yr && yr !== 'all') {
+        parts.push('year=' + yr);
+      }
+      return base + sep + parts.join('&');
+    }
+
+    function updateHospitalShareUrl() {
+      var url = getHospitalShareUrl();
+      var preview = document.getElementById('shareHospitalUrlPreview');
+      if (preview) preview.textContent = url;
+    }
+
+    function copyHospitalShareUrl() {
+      ensureValidBaseUrl(function(base) {
+        var svc = document.getElementById('shareHospitalService') ? document.getElementById('shareHospitalService').value : 'health';
+        var yr = document.getElementById('shareHospitalYear') ? document.getElementById('shareHospitalYear').value : '2026';
+        var sep = base.indexOf('?') === -1 ? '?' : '&';
+        var parts = ['report=' + svc];
+        if (yr && yr !== 'all') parts.push('year=' + yr);
+        var url = base + sep + parts.join('&');
+        var svcName = (svc === 'health') ? 'ตรวจสุขภาพประจำปี' : ((svc === 'vaccine') ? 'ฉีดวัคซีนไข้หวัดใหญ่' : ((svc === 'blood') ? 'บริจาคโลหิต' : 'ทุกโครงการ'));
+        var yrText = (yr === 'all') ? 'ทุกปี' : ('ปี ' + yr);
+
+        navigator.clipboard.writeText(url).then(function() {
+          alert("คัดลอกลิงก์รายงาน รพ. (" + svcName + " - " + yrText + ") เรียบร้อยแล้วค่ะ:\n" + url);
+        }).catch(function() {
+          prompt("กรุณาคัดลอกลิงก์รายงาน รพ. ด้านล่างนี้ค่ะ:", url);
+        });
+      });
+    }
+
+    function testHospitalShareUrl() {
+      ensureValidBaseUrl(function(base) {
+        var svc = document.getElementById('shareHospitalService') ? document.getElementById('shareHospitalService').value : 'health';
+        var yr = document.getElementById('shareHospitalYear') ? document.getElementById('shareHospitalYear').value : '2026';
+        var sep = base.indexOf('?') === -1 ? '?' : '&';
+        var parts = ['report=' + svc];
+        if (yr && yr !== 'all') parts.push('year=' + yr);
+        var url = base + sep + parts.join('&');
+        window.open(url, '_blank');
+      });
+    }
+
+    // ฟังก์ชันคัดลอกลิงก์ด่วนส่ง รพ. (ระบุโครงการและปี)
+    function quickCopyHospitalUrl(svc, yr) {
+      ensureValidBaseUrl(function(base) {
+        var sep = base.indexOf('?') === -1 ? '?' : '&';
+        var url = base + sep + 'report=' + svc + (yr ? ('&year=' + yr) : '');
+        var svcName = (svc === 'health') ? 'ตรวจสุขภาพประจำปี' : ((svc === 'vaccine') ? 'ฉีดวัคซีนไข้หวัดใหญ่' : 'บริจาคโลหิต');
+        navigator.clipboard.writeText(url).then(function() {
+          alert("คัดลอกลิงก์แดชบอร์ดโครงการ " + svcName + " (ปี " + yr + ") เรียบร้อยแล้วค่ะ!\n\nคุณสามารถนำไป Paste (Ctrl+V) ส่งทาง LINE หรือ Email ให้ทาง รพ. ได้ทันที:\n" + url);
+        }).catch(function() {
+          prompt("คัดลอกลิงก์ส่ง รพ. ด้านล่างนี้ค่ะ:", url);
+        });
+      });
+    }
+
+    // ฟังก์ชันทดลองเปิดลิงก์ด่วนของ รพ.
+    function quickOpenHospitalUrl(svc, yr) {
+      ensureValidBaseUrl(function(base) {
+        var sep = base.indexOf('?') === -1 ? '?' : '&';
+        var url = base + sep + 'report=' + svc + (yr ? ('&year=' + yr) : '');
+        window.open(url, '_blank');
+      });
+    }
+
+    // ฟังก์ชันคัดลอกลิงก์แดชบอร์ดจากหน้าที่กำลังดูอยู่ขณะนี้
+    function copyCurrentViewReportUrl() {
+      ensureValidBaseUrl(function(base) {
+        var svcKey = 'health';
+        if (currentDashboardService === 'ฉีดวัคซีนไข้หวัดใหญ่') svcKey = 'vaccine';
+        else if (currentDashboardService === 'บริจาคโลหิต') svcKey = 'blood';
+
+        var yearSelect = document.getElementById('filterYear');
+        var yrVal = yearSelect ? yearSelect.value : 'ALL';
+        var yrParam = (yrVal && yrVal !== 'ALL') ? ('&year=' + yrVal) : '';
+
+        var sep = base.indexOf('?') === -1 ? '?' : '&';
+        var url = base + sep + 'report=' + svcKey + yrParam;
+
+        var yrText = (yrVal && yrVal !== 'ALL') ? (' (เฉพาะปี ' + yrVal + ')') : ' (ทุกปี)';
+        navigator.clipboard.writeText(url).then(function() {
+          alert("คัดลอกลิงก์แดชบอร์ดโครงการ " + currentDashboardService + yrText + " เรียบร้อยแล้วค่ะ!\n\nคุณสามารถนำไป Paste (Ctrl+V) ส่งทาง LINE หรือ Email ให้ทาง รพ. ได้ทันที:\n" + url);
+        }).catch(function() {
+          prompt("คัดลอกลิงก์แดชบอร์ดส่ง รพ. ด้านล่างนี้ค่ะ:", url);
+        });
+      });
+    }
+
+    function openQrModal() {
+      var curBackend = getBackendApiUrl();
+      var inputBackend = document.getElementById('qrBaseUrlInput');
+      if (inputBackend && curBackend && curBackend.indexOf('script.google.com') !== -1) {
+        inputBackend.value = curBackend;
+      }
+
+      var curFrontend = getPublicFrontendUrl();
+      var inputFrontend = document.getElementById('qrFrontendUrlInput');
+      if (inputFrontend && curFrontend) {
+        inputFrontend.value = curFrontend;
+      }
+
+      refreshQrCodes();
+      document.getElementById('qrModal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    function copyServiceUrl(key) {
+      ensureValidBaseUrl(function(base) {
+        var publicBase = getPublicFrontendUrl() || base;
+        var url = publicBase + (publicBase.indexOf('?') === -1 ? '?' : '&') + 'service=' + key;
+        var serviceName = (key === 'health') ? 'ตรวจสุขภาพ' : ((key === 'vaccine') ? 'ฉีดวัคซีน' : 'บริจาคโลหิต');
+        navigator.clipboard.writeText(url).then(function() {
+          alert("คัดลอกลิงก์สำหรับ " + serviceName + " เรียบร้อยแล้วค่ะ:\n" + url);
+        }).catch(function() {
+          prompt("กรุณาคัดลอกลิงก์ด้านล่างนี้ค่ะ:", url);
+        });
+      });
+    }
+
+    function openTestLink(key) {
+      ensureValidBaseUrl(function(base) {
+        var publicBase = getPublicFrontendUrl() || base;
+        var url = publicBase + (publicBase.indexOf('?') === -1 ? '?' : '&') + 'service=' + key;
+        window.open(url, '_blank');
+      });
+    }
+
+    function printStandeeCombined() {
+      refreshQrCodes();
+      var area = document.getElementById('qrPrintArea');
+      if (area) {
+        area.classList.remove('print-mode-separate');
+        area.classList.add('print-mode-combined');
+      }
+      setTimeout(function() {
+        window.print();
+      }, 60);
+    }
+
+    function printStandeeSeparate() {
+      refreshQrCodes();
+      var area = document.getElementById('qrPrintArea');
+      if (area) {
+        area.classList.remove('print-mode-combined');
+        area.classList.add('print-mode-separate');
+      }
+      setTimeout(function() {
+        window.print();
+      }, 60);
+    }
+
+    function printStandeeCards() {
+      printStandeeCombined();
+    }
+
+    // Admin Password & Settings
+    function tryOpenAdmin(action) {
+      if (isAdmin) {
+        executeAdmin(action);
+      } else {
+        pendingAction = action;
+        document.getElementById('passwordModal').classList.remove('hidden');
+      }
+    }
+
+    function verifyPassword() {
+      if (document.getElementById('adminPasswordInput').value === ADMIN_PASSWORD) {
+        isAdmin = true;
+        document.getElementById('adminStatusText').textContent = 'ออกจาก Admin';
+        closePasswordModal();
+        if (pendingAction) executeAdmin(pendingAction);
+      } else {
+        alert('รหัสผ่านไม่ถูกต้อง');
+      }
+    }
+
+    function toggleAdminAuth() {
+      if (isAdmin) {
+        isAdmin = false;
+        document.getElementById('adminStatusText').textContent = 'Admin';
+        switchTab('survey');
+      } else {
+        tryOpenAdmin(null);
+      }
+    }
+
+    function executeAdmin(action) {
+      if (action === 'dashboard') switchTab('dashboard');
+      if (action === 'service_modal') openServiceModal();
+    }
+
+    function closePasswordModal() {
+      document.getElementById('passwordModal').classList.add('hidden');
+      document.getElementById('adminPasswordInput').value = '';
+    }
+
+    function openServiceModal() {
+      var radios = document.querySelectorAll('input[name="adminServiceChoice"]');
+      radios.forEach(function(r) {
+        r.checked = (r.value === currentService);
+      });
+      document.getElementById('serviceModal').classList.remove('hidden');
+    }
+
+    function closeServiceModal() {
+      document.getElementById('serviceModal').classList.add('hidden');
+    }
+
+    function saveAdminActiveService() {
+      var selectedRadio = document.querySelector('input[name="adminServiceChoice"]:checked');
+      if (!selectedRadio) return;
+      var chosen = selectedRadio.value;
+
+      var saveBtn = document.getElementById('saveServiceBtn');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'กำลังบันทึก...';
+      }
+
+      localStorage.setItem('active_service_selected', chosen);
+      updateActiveServiceUI(chosen);
+
+      callBackendApi('setActiveService', chosen, function(res) {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'บันทึกและเปิดใช้งาน';
+        }
+        closeServiceModal();
+        alert("บันทึกเรียบร้อย: ระบบเปิดแบบประเมิน '" + chosen + "' แล้วค่ะ");
+      }, function(err) {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'บันทึกและเปิดใช้งาน';
+        }
+        closeServiceModal();
+        alert("บันทึกในเครื่องเรียบร้อย: " + (err && err.message ? err.message : err));
+      });
+    }
+
+    function switchTab(tab) {
+      if (tab === 'dashboard' && !isAdmin && !isGuestReport) {
+        tryOpenAdmin('dashboard');
+        return;
+      }
+      if (tab === 'survey' && isGuestReport) {
+        return;
+      }
+      document.getElementById('surveySection').classList.toggle('hidden', tab !== 'survey');
+      document.getElementById('dashboardSection').classList.toggle('hidden', tab !== 'dashboard');
+      if (isGuestReport) {
+        document.getElementById('navSurveyBtn').classList.add('hidden');
+        document.getElementById('navDashboardBtn').classList.add('hidden');
+      } else {
+        document.getElementById('navSurveyBtn').className = (tab === 'survey') ? 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition' : 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600';
+        document.getElementById('navDashboardBtn').className = (tab === 'dashboard') ? 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition' : 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600';
+      }
+      
+      if (tab === 'dashboard') {
+        updateMonthFilterVisibility();
+        var cfg = SERVICE_CONFIGS[currentDashboardService];
+
+        if (!chartInstance) {
+          try {
+            var ctx = document.getElementById('criteriaChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+              type: 'bar',
+              plugins: [topScoreLabelsPlugin],
+              data: {
+                labels: cfg.questions.map(function(q, i) { return 'ข้อ ' + (i + 1); }),
+                datasets: [{
+                  label: 'คะแนนเฉลี่ย',
+                  data: new Array(cfg.questions.length).fill(0),
+                  backgroundColor: CRITERIA_COLORS,
+                  borderRadius: 6,
+                  maxBarThickness: 48
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                  padding: { top: 24, bottom: 2, left: 0, right: 0 }
+                },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                    titleFont: { family: 'Sarabun', size: 12, weight: '700' },
+                    bodyFont: { family: 'Sarabun', size: 11, weight: '500' },
+                    padding: 10,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                      title: function(items) {
+                        if (!items.length) return '';
+                        var idx = items[0].dataIndex;
+                        var c = SERVICE_CONFIGS[currentDashboardService];
+                        return (c && c.questions && c.questions[idx]) ? c.questions[idx] : (Array.isArray(items[0].label) ? items[0].label.join(' ') : items[0].label);
+                      },
+                      label: function(item) {
+                        var c = SERVICE_CONFIGS[currentDashboardService];
+                        var maxVal = c ? c.scaleMax : 5;
+                        return '⭐ คะแนนเฉลี่ย: ' + Number(item.raw).toFixed(2) + ' / ' + maxVal.toFixed(2) + ' คะแนน';
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    min: 0,
+                    max: cfg.scaleMax,
+                    ticks: {
+                      stepSize: 1,
+                      font: { family: 'Sarabun', size: 11, weight: '600' },
+                      color: '#94a3b8'
+                    },
+                    grid: { color: '#f1f5f9' }
+                  },
+                  x: {
+                    ticks: {
+                      autoSkip: false,
+                      maxRotation: 0,
+                      minRotation: 0,
+                      font: function() {
+                        var isMobile = (typeof window !== 'undefined' && window.innerWidth < 640);
+                        return { family: 'Sarabun', size: isMobile ? 10 : 12, weight: '600' };
+                      },
+                      color: '#334155'
+                    },
+                    grid: { display: false }
+                  }
+                }
+              }
+            });
+          } catch(e) {}
+        }
+
+        fetchDashboardDataFromSheet(false);
+      }
+    }
+
+    // เริ่มต้นระบบเมื่อโหลดหน้าเว็บเสร็จ
+    window.addEventListener('DOMContentLoaded', function() {
+      initData();
+    });
+  </script>
+</body>
+</html>
